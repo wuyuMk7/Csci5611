@@ -58,8 +58,9 @@ Camera camera(glm::vec3(0.0f, 0.0f, 30.0f));
 const unsigned int vertAttrLen = 9;
 //Camera camera(glm::vec3(1.0f, 1.0f, 6.0f), glm::vec3(0.0f, 1.0f, 0.0f), -100.0f, -15.0f);
 
+const float sampleNeighborRadius = 5.0f;
 const unsigned int frameVertCount = 4, obVertCount = 360,
-  agentVertCount = 360, maskVertCount = 360, samplePointCount = 50;
+  agentVertCount = 360, maskVertCount = 360, samplePointCount = 200;
 //unsigned int totalVertCount = 2 * (frameVertCount + obVertCount + agentVertCount) + samplePointCount, totalDrawVertCount = vertAttrLen * totalVertCount;
 unsigned int totalVertCount = 0, totalDrawVertCount = 0;
 
@@ -366,9 +367,7 @@ unsigned int convertVertices(
   std::vector<unsigned int> &shortestRoute
 )
 {
-  //unsigned int size = vertAttrLen * (agentCount + obCount + frameCount);
-  unsigned int size = agentCount + obCount + frameCount + sampleVec.size();
-
+  std::vector<std::vector<float>> tmpVerts;
 
   std::vector<std::pair<float, float>> graphEdgeVerts;
   for (unsigned int i = 0; i < graphVec.size(); ++i) {
@@ -380,70 +379,60 @@ unsigned int convertVertices(
     }
   }
 
-  size += graphEdgeVerts.size();
-  *verts = new float[size * vertAttrLen];
-  for (unsigned int i = 0;i < size * vertAttrLen; ++i)
-    (*verts)[i] = 0.0f;
-
-  unsigned int vertsIndex = 0;
   for (unsigned int i = 0;i < agentCount; ++i) {
-    (*verts)[vertsIndex * vertAttrLen] = agent[i * 3];
-    (*verts)[vertsIndex * vertAttrLen + 1] = agent[i * 3 + 1];
-    (*verts)[vertsIndex * vertAttrLen + 2] = agent[i * 3 + 2];
-    (*verts)[vertsIndex * vertAttrLen + 6] = 10.0f;
-    ++vertsIndex;
+    std::vector<float> vert{ agent[i*3], agent[i*3+1], agent[i*3+2],
+                              1.0f, 0.0f, 0.0f, 10.0f, 0.0f, 0.0f };
+    tmpVerts.push_back(vert);
   }
 
   for (unsigned int i = 0; i < obCount; ++i) {
-    (*verts)[vertsIndex * vertAttrLen] = ob[i * 3];
-    (*verts)[vertsIndex * vertAttrLen + 1] = ob[i * 3 + 1];
-    (*verts)[vertsIndex * vertAttrLen + 2] = ob[i * 3 + 2];
-    (*verts)[vertsIndex * vertAttrLen + 6] = 10.0f;
-    ++vertsIndex;
+    std::vector<float> vert{ ob[i*3], ob[i*3+1], ob[i*3+2],
+                             0.0f, 0.0f, 0.0f, 10.0f, 0.0f, 0.0f };
+    tmpVerts.push_back(vert);
   }
 
   for (unsigned int i = 0; i < frameCount; ++i) {
-    (*verts)[vertsIndex * vertAttrLen] = frame[i * 3];
-    (*verts)[vertsIndex * vertAttrLen + 1] = frame[i * 3 + 1];
-    (*verts)[vertsIndex * vertAttrLen + 2] = frame[i * 3 + 2];
-    (*verts)[vertsIndex * vertAttrLen + 6] = 10.0f;
-    ++vertsIndex;
+    std::vector<float> vert{ frame[i*3], frame[i*3+1], frame[i*3+2],
+                             0.0f, 0.0f, 0.0f, 10.0f, 0.0f, 0.0f };
+    tmpVerts.push_back(vert);
   }
 
   for (auto &sampleVert : sampleVec) {
-    (*verts)[vertsIndex * vertAttrLen] = sampleVert.first;
-    (*verts)[vertsIndex * vertAttrLen + 1] = sampleVert.second;
-    (*verts)[vertsIndex * vertAttrLen + 2] = 0.0f;
-    (*verts)[vertsIndex * vertAttrLen + 6] = 10.0f;
-    ++vertsIndex;
+    std::vector<float> vert{ sampleVert.first, sampleVert.second, 0.0f,
+                             0.0f, 0.0f, 0.0f, 10.0f, 0.0f, 0.0f };
+    tmpVerts.push_back(vert);
   }
-  unsigned int routeCount = 0, curIndex = shortestRoute.size() - 1;
+
+  unsigned int curIndex = shortestRoute.size() - 1;
   while(curIndex != 0) {
-    (*verts)[vertsIndex * vertAttrLen] = sampleVec[curIndex].first;
-    (*verts)[vertsIndex * vertAttrLen + 1] = sampleVec[curIndex].second;
-    (*verts)[vertsIndex * vertAttrLen + 2] = 0.0f;
-    (*verts)[vertsIndex * vertAttrLen + 3] = 1.0f;
-    (*verts)[vertsIndex * vertAttrLen + 6] = 10.0f;
-    ++vertsIndex;
+    std::vector<float> vert1{ sampleVec[curIndex].first, sampleVec[curIndex].second, 0.0f,
+                             1.0f, 0.0f, 0.0f, 10.0f, 0.0f, 0.0f };
+    tmpVerts.push_back(vert1);
 
     curIndex = shortestRoute[curIndex];
-    (*verts)[vertsIndex * vertAttrLen] = sampleVec[curIndex].first;
-    (*verts)[vertsIndex * vertAttrLen + 1] = sampleVec[curIndex].second;
-    (*verts)[vertsIndex * vertAttrLen + 2] = 0.0f;
-    (*verts)[vertsIndex * vertAttrLen + 3] = 1.0f;
-    (*verts)[vertsIndex * vertAttrLen + 6] = 10.0f;
-    ++vertsIndex;
-
-    routeCount += 2;
+    std::vector<float> vert2{ sampleVec[curIndex].first, sampleVec[curIndex].second, 0.0f,
+                              1.0f, 0.0f, 0.0f, 10.0f, 0.0f, 0.0f };
+    tmpVerts.push_back(vert2);
   }
-  size += routeCount;
 
   for (auto &edgeVert : graphEdgeVerts) {
-    (*verts)[vertsIndex * vertAttrLen] = edgeVert.first;
-    (*verts)[vertsIndex * vertAttrLen + 1] = edgeVert.second;
-    (*verts)[vertsIndex * vertAttrLen + 2] = 0.0f;
-    (*verts)[vertsIndex * vertAttrLen + 6] = 10.0f;
-    ++vertsIndex;
+    std::vector<float> vert{ edgeVert.first, edgeVert.second, 0.0f,
+                              0.0f, 0.0f, 0.0f, 10.0f, 0.0f, 0.0f };
+    tmpVerts.push_back(vert);
+  }
+
+  unsigned int size = tmpVerts.size();
+  *verts = new float[size * vertAttrLen];
+  for (unsigned int i = 0;i < size; ++i) {
+    (*verts)[i * vertAttrLen + 0] = tmpVerts[i][0];
+    (*verts)[i * vertAttrLen + 1] = tmpVerts[i][1];
+    (*verts)[i * vertAttrLen + 2] = tmpVerts[i][2];
+    (*verts)[i * vertAttrLen + 3] = tmpVerts[i][3];
+    (*verts)[i * vertAttrLen + 4] = tmpVerts[i][4];
+    (*verts)[i * vertAttrLen + 5] = tmpVerts[i][5];
+    (*verts)[i * vertAttrLen + 6] = tmpVerts[i][6];
+    (*verts)[i * vertAttrLen + 7] = tmpVerts[i][7];
+    (*verts)[i * vertAttrLen + 8] = tmpVerts[i][8];
   }
 
   return size;
@@ -534,8 +523,12 @@ void genGraph(std::vector<std::pair<float, float>>& samples,
       std::cout << glm::to_string(glm::dmat2(mask-src, tar-src)) << std::endl;
       std::cout << glm::determinant(glm::dmat2(glm::normalize(mask - src), tar - src)) << std::endl;
       */
+      float dist = glm::distance(tar, src);
+      if (dist > sampleNeighborRadius)
+        continue;
+
       if (abs(glm::determinant(glm::dmat2(mask - src, glm::normalize(tar - src)))) > maskR) {
-        float dist = glm::distance(tar, src);
+        //float dist = glm::distance(tar, src);
         graph[i].push_back(std::pair<unsigned int, float>{j, dist});
         graph[j].push_back(std::pair<unsigned int, float>{i, dist});
 
@@ -551,7 +544,7 @@ void genGraph(std::vector<std::pair<float, float>>& samples,
 
         if (glm::dot(proj, tar - src) < 0 ||
             glm::dot(proj, tar - src) > glm::dot(tar - src, tar - src)) {
-          float dist = glm::distance(tar, src);
+          //float dist = glm::distance(tar, src);
           graph[i].push_back(std::pair<unsigned int, float>{j, dist});
           graph[j].push_back(std::pair<unsigned int, float>{i, dist});
         }
