@@ -7,10 +7,14 @@
 #include "glm/gtx/string_cast.hpp"
 #include "vertex.h"
 #include "camera.h"
+#include "agent.h"
+#include "crowd.h"
+#include "common.h"
 
 #include <cmath>
-#include <random>
+#include <ctime>
 #include <queue>
+#include <random>
 
 using std::string;
 
