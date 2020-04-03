@@ -1,2 +1,5 @@
 .DS_Store
 .ccls-cache/
+*.o
+hw3
+hw3_checkin
