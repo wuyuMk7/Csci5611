@@ -31,16 +31,6 @@ void mouseMoveCallback(GLFWwindow *window, double xPos, double yPos);
 void mouseButtonCallback(GLFWwindow *window, int, int, int);
 void keyCallback(GLFWwindow*, int, int, int, int);
 
-void render();
-
-unsigned int genSamplePoints(float*, float, float, float, float, float, float, float,  unsigned int);
-void genGraph(std::vector<std::pair<float, float>>&,
-              std::vector<std::vector<std::pair<unsigned int, float>>>&,
-              float, float, float);
-void genRoute(std::vector<std::pair<float, float>>&, 
-              std::vector<std::vector<std::pair<unsigned int, float>>>&,
-              std::vector<unsigned int>&);
-
 // Configuration
 const float screenWidth = 800, screenHeight = 600;
 bool firstRun = true, mouseBeingPressed = false, running = false;
@@ -48,11 +38,9 @@ float mouseLastX = 0.0, mouseLastY = 0.0, mouseCurX = 0.0, mouseCurY = 0.0;
 float lastFrameTime = 0.0f, deltaFrameTime = 0.0f, frameRate = 0.0f;
 Camera camera(glm::vec3(0.0f, 0.0f, 30.0f));
 const unsigned int vertAttrLen = 9;
-//Camera camera(glm::vec3(1.0f, 1.0f, 6.0f), glm::vec3(0.0f, 1.0f, 0.0f), -100.0f, -15.0f);
 
-const float sampleNeighborRadius = 8.0f;
-const unsigned int frameVertCount = 4, wayPointCount = 200;
-
+const float sampleNeighborRadius = 10.0f;
+unsigned int frameVertCount = 4, wayPointCount = 150;
 unsigned int totalVertCount = 0, totalDrawVertCount = 0;
 
 // Shapes
@@ -65,23 +53,50 @@ const float agentSpeed = 0.05f;
 
 // Settings
 bool path_PRM = true; // true for PRM and false for RRT.
-float nearest_neighbor_dist = 20.0f;
-unsigned int maximumAgentCount = 6;
+
+// Scene 1 for normal PRM Boid
+// Scene 2 for PRM + target change + obstacle
+// Scene 3 for A* with normal ones (time & times to reach dest) (A*)
+// Scene 4 for A* with normal ones (time & times to reach dest) (Without A* - Dijkstra)
+// Scene 5 for RRT
+// Scene 6 for RRT*
+// Scene 7 for single object RRT
+// Scene 8 for single object RRT*
+// Scene 9 for non-smoothing path with RRT
 unsigned int scene = 1;
-bool scenePrep = false;
+bool scenePrep = false, changeSceneFlag = true, pureFlag = true;
+bool replan = false, smoothFlag = true;
+glm::vec3 replanToTarget(0.0f, 0.0f, 0.0f);
+
+float nearest_neighbor_dist = 20.0f;
+unsigned int maximumAgentCount = 25;
 
 // Shapes
-float rtRoutes[2700000];
-unsigned int maxRtRtPts = 300000;
+//float rtRoutes[2700000];
+//unsigned int maxRtRtPts = 300000;
 
 std::vector<Agent> agents;
 std::vector<Obstacle> obstacles;
+std::vector<Vertex> targets;
+Crowd crowd(agents, targets);
 
 Rectangle frame(Vertex(glm::vec3(-10.0f, 10.0f, 0.0f)), Vertex(glm::vec3(10.0f, -10.0f, 0.0f)));
+
+// float *bgPoints, *agentPoints, *predPoints, *realPoints, *ptPoints;
+float bgPoints[180000], agentPoints[360000], predPoints[2700000], realPoints[2700000], ptPoints[2700000];
+unsigned int obVertCount = 0, graphEdgeVertCount = 0;
+unsigned int bgVertCount = 0, bgVertArrCount = 0, agentVertCount = 0,
+             agentVertArrCount = 0, predVertCount = 0, predVertArrCount = 0,
+             realVertCount = 0, realVertArrCount = 0, pointVertCount = 0,
+             pointVertArrCount = 0;
 
 /************ New ***********/
 
 void initializeAgents(std::vector<Agent> &);
+void restoreAgents(std::vector<Agent> &agents);
+void initializeObstacles(std::vector<Obstacle> &);
+void initializeTargets(std::vector<Vertex> &targets);
+
 unsigned int drawAgents(std::vector<Agent> &, std::vector<Vertex> &);
 unsigned int reDrawAgent(float*, std::vector<Vertex> &);
 unsigned int drawObstacles(std::vector<Obstacle> &, std::vector<Vertex> &);
@@ -96,7 +111,32 @@ unsigned int convertPredRtVerts(float **predRtPoints,
 unsigned int convertRealRtVerts(float **realRtPoints,
                                 std::vector<Vertex> &realRtVerts);
 unsigned int convertPtVerts(float **ptPoints,
-                            std::vector<glm::vec3> &waypoints);
+                            std::vector<glm::vec3> &waypoints,
+                            std::vector<glm::vec3> &pathSources,
+                            std::vector<glm::vec3> &pathTargets);
+
+unsigned int convertBGVerts(float *bgPoints, std::vector<Vertex> &frameVerts,
+                            std::vector<Vertex> &obstacleVerts);
+unsigned int convertAgentVerts(float *agentPoints,
+                               std::vector<Vertex> &agentVerts);
+unsigned int convertPredRtVerts(float *predRtPoints,
+                                std::vector<Vertex> &predRtVerts,
+                                std::vector<Agent> &agents);
+unsigned int convertRealRtVerts(float *realRtPoints,
+                                std::vector<Vertex> &realRtVerts);
+unsigned int convertPtVerts(float *ptPoints,
+                            std::vector<glm::vec3> &waypoints,
+                            std::vector<glm::vec3> &pathSources,
+                            std::vector<glm::vec3> &pathTargets);
+
+void changeScene(std::vector<Agent> &agents, std::vector<Obstacle> &obs,
+                 std::vector<Vertex> &targets,
+                 Rectangle &frame, std::vector<glm::vec3> &graphVerts,
+                 std::vector<std::vector<std::pair<unsigned int, float>>> &graph,
+                 std::vector<Vertex> &agentVerts, std::vector<Vertex> &frameVerts,
+                 std::vector<Vertex> &obVerts, std::vector<Vertex> &predRtVerts,
+                 std::vector<Vertex> &realRtVerts, std::vector<Vertex> &ptVerts,
+                 std::vector<Vertex> &graphEdgeVerts);
 
 unsigned int sampleWaypoints(std::vector<glm::vec3> &waypoints,
                              const std::vector<Obstacle> &obs,
@@ -110,6 +150,533 @@ unsigned int drawGraphEdges(std::vector<Vertex> &edges,
                             std::vector<std::vector<std::pair<unsigned int, float>>> &graph,
                             glm::vec3 edgeColor = glm::vec3(0.0f, 0.0f, 0.0f));
 
+int main(int argc, char* argv[])
+{
+  glfwInit();
+
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
+#ifdef __APPLE__
+  glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+#endif
+
+  GLFWwindow* window = glfwCreateWindow(screenWidth, screenHeight, "Homework 3 (Press ENTER to start/pause)", NULL, NULL);
+  if (window == NULL) {
+    std::cout << "Failed to create GLFW window" << std::endl;
+    glfwTerminate();
+    return -1;
+  }
+  glfwMakeContextCurrent(window);
+  //glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+  glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+  glfwSetCursorPosCallback(window, mouseMoveCallback);
+  glfwSetMouseButtonCallback(window, mouseButtonCallback);
+  glfwSetScrollCallback(window, scrollCallback);
+  glfwSetKeyCallback(window, keyCallback);
+
+  if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
+    std::cout << "Failed to initialize GLAD" << std::endl;
+    return -1;
+  }
+
+  glfwSetFramebufferSizeCallback(window, framebuffer_size_cb);
+  glEnable(GL_DEPTH_TEST);
+
+  // Shapes & Routes
+  initializeAgents(agents);
+  initializeObstacles(obstacles);
+  initializeTargets(targets);
+
+  /*
+  obstacles.push_back(Obstacle(Vertex(glm::vec3(0.0f, 3.5f, 0.0f)), obR));
+  obstacles.push_back(Obstacle(Vertex(glm::vec3(0.0f, -3.5f, 0.0f)), obR));
+  obstacles.push_back(Obstacle(Vertex(glm::vec3(5.0f, 0.0f, 0.0f)), obR));
+  obstacles.push_back(Obstacle(Vertex(glm::vec3(5.0f, 5.0f, 0.0f)), obR - 1.0f));
+  obstacles.push_back(Obstacle(Vertex(glm::vec3(5.0f, -5.0f, 0.0f)), obR - 1.0f));
+  */
+  //obstacles.clear();
+
+  //obstacles.push_back(Obstacle(Vertex(glm::vec3(0.0f, 0.0f, 0.0f)), obR));
+
+  // Generate sample points for roadmap
+  std::vector<glm::vec3> waypointsVec;
+  for (auto &agent:crowd.agents())
+    waypointsVec.push_back(agent.center().pos());
+
+  sampleWaypoints(waypointsVec, obstacles, frame, agentR, wayPointCount);
+
+  std::vector<glm::vec3> graphVerts, tmpGraphVerts(waypointsVec);
+  std::vector<std::vector<std::pair<unsigned int, float>>> graph;
+  updateGraph(graph, graphVerts, waypointsVec, obstacles, frame, agentR);
+
+  //crowd.genPath(graphVerts, graph, obstacles, frame, "RRT", "AStar");
+  //crowd.genPath(graphVerts, graph, obstacles, frame, "PRM", "AStar");
+
+  // Generate geometry vertices and points for opengl
+  /*
+  unsigned int bgVertCount = 0, bgVertArrCount = 0,
+    agentVertCount = 0, agentVertArrCount = 0,
+    predVertCount = 0, predVertArrCount = 0,
+    realVertCount = 0, realVertArrCount = 0,
+    pointVertCount = 0, pointVertArrCount = 0;
+  */
+  //float *bgPoints, *agentPoints, *predPoints, *realPoints, *ptPoints;
+
+  //unsigned int obVertCount = 0, frameVertCount = 0, graphEdgeVertCount;
+  std::vector<Vertex> agentVerts, frameVerts, obVerts, predRtVerts, realRtVerts, ptVerts,
+    graphEdgeVerts;
+
+  /*
+  frameVertCount = frame.renderPoints(frameVerts);
+  agentVertCount = drawAgents(agents, agentVerts);
+  obVertCount = drawObstacles(obstacles, obVerts);
+  */
+
+  // TODO: Merge predverts and graphverts! (when displaying the graph)
+  //graphEdgeVertCount = drawGraphEdges(graphEdgeVerts, graphVerts, graph);
+
+  /*
+  bgVertCount = convertBGVerts(&bgPoints, frameVerts, obVerts);
+  bgVertArrCount = bgVertCount * vertAttrLen;
+  agentVertCount = convertAgentVerts(&agentPoints, agentVerts);
+  agentVertArrCount = agentVertCount * vertAttrLen;
+  // TODO: Use predVerts instead (in the following statement)
+  predVertCount = convertPredRtVerts(&predPoints, graphEdgeVerts, agents);
+  predVertArrCount = predVertCount * vertAttrLen;
+  //pointVertCount = convertPtVerts(&ptPoints, waypointsVec);
+  pointVertCount = convertPtVerts(&ptPoints, graphVerts);
+  pointVertArrCount = pointVertCount * vertAttrLen;
+  */
+
+
+  /*
+  bgVertCount = convertBGVerts(bgPoints, frameVerts, obVerts);
+  bgVertArrCount = bgVertCount * vertAttrLen;
+  agentVertCount = convertAgentVerts(agentPoints, agentVerts);
+  agentVertArrCount = agentVertCount * vertAttrLen;
+  // TODO: Use predVerts instead (in the following statement)
+  predVertCount = convertPredRtVerts(predPoints, graphEdgeVerts, agents);
+  predVertArrCount = predVertCount * vertAttrLen;
+  //pointVertCount = convertPtVerts(&ptPoints, waypointsVec);
+  pointVertCount = convertPtVerts(ptPoints, graphVerts);
+  pointVertArrCount = pointVertCount * vertAttrLen;
+  */
+
+  changeScene(agents, obstacles, targets, frame,
+              graphVerts, graph,
+              agentVerts, frameVerts, obVerts, predRtVerts,
+              realRtVerts, ptVerts, graphEdgeVerts);
+
+  //float bgPoints[180000], agentPoints[360000], predPoints[2700000],
+  //realPoints[2700000], ptPoints[2700000];
+  // Buffers
+  unsigned int VBOs[5];
+  glGenBuffers(5, VBOs);
+  glBindBuffer(GL_ARRAY_BUFFER, VBOs[VI_agents]);
+  //glBufferData(GL_ARRAY_BUFFER, agentVertArrCount * sizeof(float), agentPoints, GL_STREAM_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, 180000 * sizeof(float), agentPoints, GL_STREAM_DRAW);
+  glBindBuffer(GL_ARRAY_BUFFER, VBOs[VI_bg]);
+  //glBufferData(GL_ARRAY_BUFFER, bgVertArrCount * sizeof(float), bgPoints, GL_DYNAMIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, 360000 * sizeof(float), bgPoints,
+               GL_DYNAMIC_DRAW);
+  glBindBuffer(GL_ARRAY_BUFFER, VBOs[VI_p_rts]);
+  //glBufferData(GL_ARRAY_BUFFER, predVertArrCount * sizeof(float), predPoints, GL_DYNAMIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, 2700000 * sizeof(float), predPoints,
+               GL_DYNAMIC_DRAW);
+  glBindBuffer(GL_ARRAY_BUFFER, VBOs[VI_r_rts]);
+  //glBufferData(GL_ARRAY_BUFFER, realVertArrCount * sizeof(float), realPoints, GL_STREAM_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, 2700000 * sizeof(float), realPoints,
+               GL_STREAM_DRAW);
+  glBindBuffer(GL_ARRAY_BUFFER, VBOs[VI_pts]);
+  //glBufferData(GL_ARRAY_BUFFER, pointVertArrCount * sizeof(float), ptPoints, GL_STATIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, 2700000 * sizeof(float), ptPoints,
+               GL_STATIC_DRAW);
+
+  unsigned int VAOs[5];
+  glGenVertexArrays(5, VAOs);
+  for (unsigned int i = 0;i < 5; ++i) {
+    glBindVertexArray(VAOs[i]);
+    glBindBuffer(GL_ARRAY_BUFFER, VBOs[i]);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, vertAttrLen * sizeof(float),
+                          (void *)0);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, vertAttrLen * sizeof(float),
+                          (void *)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, vertAttrLen * sizeof(float),
+                          (void *)(6 * sizeof(float)));
+    glEnableVertexAttribArray(2);
+    glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, vertAttrLen * sizeof(float),
+                          (void *)(7 * sizeof(float)));
+    glEnableVertexAttribArray(3);
+  }
+  glBindVertexArray(0);
+  glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+  // Shader & Camera Settings
+  int success = 0;
+  char infoLog[512];
+  unsigned int vertexShader, fragmentShader, shaderProgram;
+  loadShader("hw3.vert", "hw3.frag", vertexShader, fragmentShader, shaderProgram);
+  glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
+  if (!success) {
+    glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
+    std::cout << "ShaderProgram failed:" << infoLog << std::endl;
+  }
+
+  glDeleteShader(vertexShader);
+  glDeleteShader(fragmentShader);
+
+  GLint modelID = glGetUniformLocation(shaderProgram, "model");
+  GLint viewID = glGetUniformLocation(shaderProgram, "view");
+  GLint projectionID = glGetUniformLocation(shaderProgram, "projection");
+  glm::mat4 model(1.0f), view(1.0f), projection(1.0f);
+
+  time_t sceneStartTime = time(0);
+  long int duration;
+  //glEnable(GL_LINE_WIDTH);
+  glEnable(GL_PROGRAM_POINT_SIZE);
+  while(!glfwWindowShouldClose(window)) {
+    if (scenePrep) {
+      changeScene(agents, obstacles, targets, frame, graphVerts, graph,
+                  agentVerts, frameVerts, obVerts, predRtVerts, realRtVerts,
+                  ptVerts, graphEdgeVerts);
+      scenePrep = false;
+      running = false;
+      sceneStartTime = time(0);
+
+      void *buf_ptr;
+      glBindBuffer(GL_ARRAY_BUFFER, VBOs[VI_agents]);
+      buf_ptr = glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
+      memcpy(buf_ptr, agentPoints,
+             vertAttrLen * agentVertCount * sizeof(float));
+      glUnmapBuffer(GL_ARRAY_BUFFER);
+
+      glBindBuffer(GL_ARRAY_BUFFER, VBOs[VI_bg]);
+      buf_ptr = glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
+      memcpy(buf_ptr, bgPoints,
+             vertAttrLen * bgVertCount * sizeof(float));
+      glUnmapBuffer(GL_ARRAY_BUFFER);
+
+      glBindBuffer(GL_ARRAY_BUFFER, VBOs[VI_p_rts]);
+      buf_ptr = glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
+      memcpy(buf_ptr, predPoints,
+             vertAttrLen * predVertCount * sizeof(float));
+      glUnmapBuffer(GL_ARRAY_BUFFER);
+
+      glBindBuffer(GL_ARRAY_BUFFER, VBOs[VI_r_rts]);
+      buf_ptr = glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
+      memcpy(buf_ptr, realPoints,
+             vertAttrLen * realVertCount * sizeof(float));
+      glUnmapBuffer(GL_ARRAY_BUFFER);
+
+      glBindBuffer(GL_ARRAY_BUFFER, VBOs[VI_pts]);
+      buf_ptr = glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
+      memcpy(buf_ptr, ptPoints,
+             vertAttrLen * pointVertCount * sizeof(float));
+      glUnmapBuffer(GL_ARRAY_BUFFER);
+
+      continue;
+    }
+
+    duration = time(0) - sceneStartTime;
+    if (changeSceneFlag) {
+      switch (scene) {
+      case 1:
+        if (duration > 30) {
+          scenePrep = true;
+          scene = 2;
+          std::cout << "- Scene 2: dynamic target and replan" << std::endl;
+        }
+        break;
+      case 2:
+        if (duration > 30) {
+          scenePrep = true;
+          scene = 3;
+          std::cout << "- Scene 3: shortest path finding with A*" << std::endl;
+        }
+        break;
+      case 3:
+        if (duration > 25) {
+          scenePrep = true;
+          scene = 4;
+          std::cout << "- Scene 4: shortest path finding with Dijkstra" << std::endl;
+        }
+        break;
+      case 4:
+        if (duration > 15) {
+          scenePrep = true;
+          scene = 5;
+          std::cout << "- Scene 5: global navigation with RRT" << std::endl;
+        }
+        break;
+      case 5:
+        if (duration > 20) {
+          scenePrep = true;
+          scene = 6;
+          std::cout << "- Scene 6: global navigation with RRT*" << std::endl;
+        }
+        break;
+      case 6:
+        if (duration > 15) {
+          scenePrep = true;
+          scene = 7;
+          std::cout << "- Scene 7: single object with RRT" << std::endl;
+        }
+        break;
+      case 7:
+        if (duration > 15) {
+          scenePrep = true;
+          scene = 8;
+          std::cout << "- Scene 8: single object with RRT*" << std::endl;
+        }
+        break;
+      case 8:
+        if (duration > 15) {
+          scenePrep = true;
+          scene = 9;
+          smoothFlag = false;
+          std::cout << "- Scene 9: Non-smoothing path with RRT" << std::endl;
+        }
+        break;
+      default:
+        break;
+      }
+    }
+
+    if ((scene == 2) && replan) {
+      replan = false;
+      targets.clear();
+      targets.push_back(Vertex(replanToTarget));
+      for (auto &agent: agents)
+        agent.clearPath();
+      crowd.genPath(graphVerts, graph, obstacles, frame, "PRM", "AStar");
+
+      float newTarget[9] = { replanToTarget.x, replanToTarget.y, replanToTarget.z,
+                             0.0f, 0.0f, 1.0f, 20.0f, 0.0f, 0.0f};
+      glBindBuffer(GL_ARRAY_BUFFER, VBOs[VI_pts]);
+      void *buf_ptr = glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
+      memcpy(buf_ptr, newTarget, vertAttrLen * sizeof(float));
+      glUnmapBuffer(GL_ARRAY_BUFFER);
+    }
+
+    float currentFrameTime = glfwGetTime();
+    deltaFrameTime = currentFrameTime - lastFrameTime;
+    lastFrameTime = currentFrameTime;
+    frameRate = 1 / deltaFrameTime;
+    //std::cout << "Frame rate: " << frameRate << std::endl;
+    camera.speed(2.5f);
+
+    processInput(window);
+
+    glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    glUseProgram(shaderProgram);
+
+    // Set model view projection matrix
+    view = camera.view();
+    projection = glm::perspective(glm::radians(camera.zoom()),
+                                  (float)screenWidth / (float)screenHeight,
+                                  0.1f, 100.0f);
+    glUniformMatrix4fv(viewID, 1, GL_FALSE, glm::value_ptr(view));
+    glUniformMatrix4fv(projectionID, 1, GL_FALSE, glm::value_ptr(projection));
+    glUniformMatrix4fv(modelID, 1, GL_FALSE, glm::value_ptr(model));
+
+    // Render
+    glBindVertexArray(VAOs[0]);
+    glBindBuffer(GL_ARRAY_BUFFER, VBOs[VI_agents]);
+    glDrawArrays(GL_LINES, 0, agentVertCount);
+
+    glBindVertexArray(VAOs[1]);
+    glBindBuffer(GL_ARRAY_BUFFER, VBOs[VI_bg]);
+    glDrawArrays(GL_LINES, 0, bgVertCount);
+
+    glBindVertexArray(VAOs[4]);
+    glBindBuffer(GL_ARRAY_BUFFER, VBOs[VI_pts]);
+    glDrawArrays(GL_POINTS, 0, pointVertCount);
+
+    if (scene != 2) {
+      glBindVertexArray(VAOs[2]);
+      glBindBuffer(GL_ARRAY_BUFFER, VBOs[VI_p_rts]);
+      glDrawArrays(GL_LINES, 0, predVertCount);
+
+      glBindVertexArray(VAOs[3]);
+      glBindBuffer(GL_ARRAY_BUFFER, VBOs[VI_r_rts]);
+      glDrawArrays(GL_LINES, 0, realVertCount);
+    }
+
+    // Compute Locations
+    if (running)
+      crowd.simulate(3 * agentR, obstacles, frame, "boid", smoothFlag);
+
+    // Re-draw Shapes & Render
+    agentVerts.clear();
+    agentVertCount = drawAgents(agents, agentVerts);
+    agentVertCount = reDrawAgent(agentPoints, agentVerts);
+
+    glBindBuffer(GL_ARRAY_BUFFER, VBOs[VI_agents]);
+    void *buf_ptr = glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
+    memcpy(buf_ptr, agentPoints, vertAttrLen * agentVertCount * sizeof(float));
+    glUnmapBuffer(GL_ARRAY_BUFFER);
+
+    glfwSwapBuffers(window);
+    glfwPollEvents();
+  }
+
+  //delete[] samplePoints;
+
+
+  /*
+  if (bgPoints) delete[] bgPoints;
+  if (agentPoints) delete[] agentPoints;
+  if (predPoints) delete[] predPoints;
+  if (realPoints) delete[] realPoints;
+  if (ptPoints) delete[] ptPoints;
+  */
+
+  glfwTerminate();
+
+  return 0;
+}
+
+void framebuffer_size_cb(GLFWwindow *window, int width, int height)
+{
+  glViewport(0, 0, width, height);
+}
+
+void processInput(GLFWwindow *window)
+{
+  /* WSAD control */
+  if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+    camera.moveForward(deltaFrameTime);
+  if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+    camera.moveBackward(deltaFrameTime);
+  if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+    camera.moveLeft(deltaFrameTime);
+  if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+    camera.moveRight(deltaFrameTime);
+
+  // Camera control - to replace mouse movement control
+  if (glfwGetKey(window, GLFW_KEY_7) == GLFW_PRESS)
+    camera.pitchAndYaw(1.0, 0.0);
+  if (glfwGetKey(window, GLFW_KEY_8) == GLFW_PRESS)
+    camera.pitchAndYaw(-1.0, 0.0);
+  if (glfwGetKey(window, GLFW_KEY_9) == GLFW_PRESS)
+    camera.pitchAndYaw(0.0, 1.0);
+  if (glfwGetKey(window, GLFW_KEY_0) == GLFW_PRESS)
+    camera.pitchAndYaw(0.0, -1.0);
+}
+
+void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods)
+{
+  if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+    glfwSetWindowShouldClose(window, true);
+  if (key == GLFW_KEY_ENTER && action  == GLFW_PRESS)
+    running = (running ? false : true);
+}
+
+
+void scrollCallback(GLFWwindow *window, double xOffset, double yOffset)
+{
+  camera.zoomInOut(yOffset);
+}
+
+void mouseMoveCallback(GLFWwindow *window, double xPos, double yPos)
+{
+  /*
+  if (firstRun) {
+    mouseLastX = xPos;
+    mouseLastY = yPos;
+    firstRun = false;
+  }
+
+  double xOffset = xPos - mouseLastX, yOffset = mouseLastY - yPos;
+  mouseLastX = xPos;
+  mouseLastY = yPos;
+
+  camera.pitchAndYaw(xOffset, yOffset);
+  */
+  mouseCurX = xPos;
+  mouseCurY = yPos;
+}
+
+void mouseButtonCallback(GLFWwindow *window, int button, int action, int mods)
+{
+  if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
+    double xPos, yPos;
+    glfwGetCursorPos(window, &xPos, &yPos);
+    std::cout << xPos << ", " << yPos << std::endl;
+
+    /*
+    // Camera settings
+    glm::mat4 model(1.0f), view(1.0f), projection(1.0f);
+    view = camera.view();
+    projection = glm::perspective(glm::radians(camera.zoom()),
+                                  (float)screenWidth / (float)screenHeight,
+                                  0.1f, 100.0f);
+    */
+
+    // TODO: Check scene here
+    /*
+    glm::vec3 mouseSpacePos(0.0f, 0.0f, 0.0f);
+    mouseSpacePos.x = (xPos - screenWidth / 2) / 24.0f;
+    mouseSpacePos.y = (screenHeight / 2 - yPos) / 24.0f;
+    */
+
+    replan = true;
+    replanToTarget.x = (xPos - screenWidth / 2)/ 24.0f;
+    replanToTarget.y = (screenHeight / 2 - yPos) / 24.0f;
+    replanToTarget.z = 0;
+
+    //std::cout << glm::to_string(mouseSpacePos) << std::endl;
+    /*
+    glm::vec4 result = projection * view * model * mouseSpacePos;
+    std::cout << glm::to_string(result) << std::endl;
+    */
+  }
+}
+
+void loadShader(
+  const char* vertexShaderName, const char* fragmentShaderName,
+  unsigned int& vertShader, unsigned int& fragShader, unsigned int& shaderProg
+)
+{
+  std::ifstream vertexShaderFStream(vertexShaderName),
+    fragmentShaderFStream(fragmentShaderName);
+  std::stringstream vertexShaderStream, fragmentShaderStream;
+
+  vertexShaderStream << vertexShaderFStream.rdbuf();
+  fragmentShaderStream << fragmentShaderFStream.rdbuf();
+
+  const string *vertexStr = new string(vertexShaderStream.str());
+  const string *fragStr = new string(fragmentShaderStream.str());
+  // const char *vertexShaderSource = vertexShaderStream.str().c_str();
+  // const char *fragmentShaderSource = fragmentShaderStream.str().c_str();
+  const char *vertexShaderSource = vertexStr->c_str();
+  const char *fragmentShaderSource = fragStr->c_str();
+
+  //std::cout << vertexShaderSource;
+  //std::cout << fragmentShaderSource;
+
+  vertShader = glCreateShader(GL_VERTEX_SHADER);
+  glShaderSource(vertShader, 1, &vertexShaderSource, NULL);
+  glCompileShader(vertShader);
+
+  fragShader = glCreateShader(GL_FRAGMENT_SHADER);
+  glShaderSource(fragShader, 1, &fragmentShaderSource, NULL);
+  glCompileShader(fragShader);
+
+  shaderProg = glCreateProgram();
+  glAttachShader(shaderProg, vertShader);
+  glAttachShader(shaderProg, fragShader);
+  glLinkProgram(shaderProg);
+
+  delete vertexStr;
+  delete fragStr;
+}
 // Set initial velocity here!
 void initializeAgents(std::vector<Agent> &agents)
 {
@@ -120,7 +687,13 @@ void initializeAgents(std::vector<Agent> &agents)
                                              frameVerts[0].pos().x + 30 * agentR),
       disY(frameVerts[3].pos().y + agentR, frameVerts[3].pos().y + 30 * agentR);
 
-  for (unsigned int i = 0; i < maximumAgentCount - 5;) {
+  unsigned int agentCount = maximumAgentCount - 5;
+  if (scene > 6) {
+    agentCount = 1;
+  }
+
+  agents.clear();
+  for (unsigned int i = 0; i < agentCount;) {
     Agent agent(Vertex(glm::vec3(disX(gen), disY(gen), 0.0f)), agentR);
     //agent.vertices()[0].vel(-disX(gen)/10, -disY(gen)/10, 0.0f);
     bool insert = true;
@@ -137,12 +710,41 @@ void initializeAgents(std::vector<Agent> &agents)
   }
 }
 
+void restoreAgents(std::vector<Agent> &agents) {
+  for (auto &agent: agents)
+    agent.restore();
+}
+
+void initializeObstacles(std::vector<Obstacle> &obs)
+{
+  obs.clear();
+
+  if (scene > 6) {
+    obs.push_back(Obstacle(Vertex(glm::vec3(0.0f, 0.0f, 0.0f)), obR));
+  } else {
+    obs.push_back(Obstacle(Vertex(glm::vec3(0.0f, 3.5f, 0.0f)), obR));
+    obs.push_back(Obstacle(Vertex(glm::vec3(0.0f, -3.5f, 0.0f)), obR));
+    obs.push_back(Obstacle(Vertex(glm::vec3(5.0f, 0.0f, 0.0f)), obR));
+    obs.push_back(
+        Obstacle(Vertex(glm::vec3(5.0f, 5.0f, 0.0f)), obR - 1.0f));
+    obs.push_back(
+        Obstacle(Vertex(glm::vec3(5.0f, -5.0f, 0.0f)), obR - 1.0f));
+  }
+}
+
+void initializeTargets(std::vector<Vertex> &targets)
+{
+  targets.clear();
+
+  targets.push_back(Vertex(glm::vec3(7.0f, 7.0f, 0.0f)));
+}
+
 unsigned int convertBGVerts(float **bgPoints, std::vector<Vertex> &frameVerts,
                             std::vector<Vertex> &obstacleVerts)
 {
   unsigned int size = frameVerts.size() + obstacleVerts.size();
   unsigned int ptr = 0;
-  *bgPoints = new float[size * vertAttrLen];
+  //*bgPoints = new float[size * vertAttrLen];
 
   for (unsigned int i = 0; i < frameVerts.size(); ++i)
     ptr += frameVerts[i].flat((*bgPoints) + ptr);
@@ -153,17 +755,46 @@ unsigned int convertBGVerts(float **bgPoints, std::vector<Vertex> &frameVerts,
   return size;
 }
 
+unsigned int convertBGVerts(float *bgPoints, std::vector<Vertex> &frameVerts,
+                            std::vector<Vertex> &obstacleVerts) {
+  unsigned int size = frameVerts.size() + obstacleVerts.size();
+  unsigned int ptr = 0;
+  //*bgPoints = new float[size * vertAttrLen];
+
+  for (unsigned int i = 0; i < frameVerts.size(); ++i)
+    ptr += frameVerts[i].flat(bgPoints + ptr);
+
+  for (unsigned int i = 0; i < obstacleVerts.size(); ++i)
+    ptr += obstacleVerts[i].flat(bgPoints + ptr);
+
+  return size;
+}
+
 unsigned int convertAgentVerts(float **agentPoints,
                                std::vector<Vertex> &agentVerts)
 {
   unsigned int size = agentVerts.size();
-  *agentPoints = new float[size * vertAttrLen];
+  //*agentPoints = new float[size * vertAttrLen];
 
   for (unsigned int i = 0;i < size * vertAttrLen; ++i)
     (*agentPoints)[i] = 0.0f;
 
   for (unsigned int i = 0, ptr = 0; i < agentVerts.size(); ++i)
     ptr += agentVerts[i].flat((*agentPoints) + ptr);
+
+  return size;
+}
+
+unsigned int convertAgentVerts(float *agentPoints,
+                               std::vector<Vertex> &agentVerts) {
+  unsigned int size = agentVerts.size();
+  //*agentPoints = new float[size * vertAttrLen];
+
+  for (unsigned int i = 0; i < size * vertAttrLen; ++i)
+    (agentPoints)[i] = 0.0f;
+
+  for (unsigned int i = 0, ptr = 0; i < agentVerts.size(); ++i)
+    ptr += agentVerts[i].flat((agentPoints) + ptr);
 
   return size;
 }
@@ -176,17 +807,19 @@ unsigned int convertPredRtVerts(float **predRtPoints,
   unsigned int i = 0;
   for (auto &agent: agents) {
     //std::cout << "Agent " << i++ << " : " << glm::to_string(agent.center().pos()) << std::endl;
-    for (unsigned int i = 0;i < agent.path().size() - 1; ++i) {
-      //std::cout << glm::to_string(agent.path()[i].pos()) << std::endl;
-      pathVerts.push_back(agent.path()[i]);
-      pathVerts.push_back(agent.path()[i+1]);
+    if (!agent.path().empty()) {
+      for (unsigned int i = 0; i < agent.path().size() - 1; ++i) {
+        // std::cout << glm::to_string(agent.path()[i].pos()) << std::endl;
+        pathVerts.push_back(agent.path()[i]);
+        pathVerts.push_back(agent.path()[i + 1]);
+      }
     }
   }
 
   unsigned int size = predRtVerts.size() + pathVerts.size();
   //unsigned int size = predRtVerts.size();
   //unsigned int size = pathVerts.size();
-  *predRtPoints = new float[size * vertAttrLen];
+  //*predRtPoints = new float[size * vertAttrLen];
 
   unsigned int ptr = 0;
 
@@ -204,17 +837,56 @@ unsigned int convertPredRtVerts(float **predRtPoints,
   return size;
 }
 
+unsigned int convertPredRtVerts(float *predRtPoints,
+                                std::vector<Vertex> &predRtVerts,
+                                std::vector<Agent> &agents)
+{
+  std::vector<Vertex> pathVerts;
+  unsigned int i = 0;
+  for (auto &agent: agents) {
+    if (!agent.path().empty()) {
+      for (unsigned int i = 0; i < agent.path().size() - 1; ++i) {
+        pathVerts.push_back(agent.path()[i]);
+        pathVerts.push_back(agent.path()[i + 1]);
+      }
+    }
+  }
+
+  unsigned int size = predRtVerts.size() + pathVerts.size();
+  unsigned int ptr = 0;
+
+  for (unsigned int i = 0; i < pathVerts.size(); ++i) {
+    ptr += pathVerts[i].flat((predRtPoints) + ptr);
+  }
+
+  for (unsigned int i = 0;i < predRtVerts.size(); ++i) {
+    Vertex curV(predRtVerts[i]);
+    curV.color(0.8f, 0.8f, 0.8f);
+    ptr += curV.flat((predRtPoints) + ptr);
+  }
+
+  return size;
+}
+
+
 unsigned int convertRealRtVerts(float **realRtPoints,
                                 std::vector<Vertex> &realRtVerts)
 {
   return 0;
 }
 
+unsigned int convertRealRtVerts(float *realRtPoints,
+                                std::vector<Vertex> &realRtVerts) {
+  return 0;
+}
+
 unsigned int convertPtVerts(float **ptPoints,
-                            std::vector<glm::vec3> &waypoints)
+                            std::vector<glm::vec3> &waypoints,
+                            std::vector<glm::vec3> &pathSources,
+                            std::vector<glm::vec3> &pathTargets)
 {
   unsigned int size = waypoints.size();
-  *ptPoints = new float[size * vertAttrLen];
+  //*ptPoints = new float[size * vertAttrLen];
 
   unsigned int ptr = 0;
   Vertex curWayPtVert(glm::vec3(0.0f, 0.0f, 0.0f));
@@ -224,6 +896,129 @@ unsigned int convertPtVerts(float **ptPoints,
   }
 
   return size;
+}
+
+unsigned int convertPtVerts(float *ptPoints,
+                            std::vector<glm::vec3> &waypoints,
+                            std::vector<glm::vec3> &pathSources,
+                            std::vector<glm::vec3> &pathTargets)
+{
+  unsigned int size = waypoints.size() + pathSources.size() + pathTargets.size();
+
+  unsigned int ptr = 0;
+  Vertex curWayPtVert(glm::vec3(0.0f, 0.0f, 0.0f));
+  for (auto &src : pathSources) {
+    curWayPtVert.pos(src.x, src.y, src.z);
+    curWayPtVert.color(1.0f, 0.0f, 0.0f);
+    ptr += curWayPtVert.flat((ptPoints) + ptr);
+  }
+
+  for (auto &tar : pathTargets) {
+    curWayPtVert.pos(tar.x, tar.y, tar.z);
+    curWayPtVert.color(0.0f, 0.0f, 1.0f);
+    ptr += curWayPtVert.flat((ptPoints) + ptr);
+  }
+
+  for (auto &waypoint : waypoints) {
+    curWayPtVert.pos(waypoint.x, waypoint.y, waypoint.z);
+    curWayPtVert.color(0.6f, 0.6f, 0.6f);
+    ptr += curWayPtVert.flat((ptPoints) + ptr);
+  }
+
+  return size;
+}
+
+void changeScene(
+    std::vector<Agent> &agents, std::vector<Obstacle> &obs,
+    std::vector<Vertex> &targets, Rectangle &frame,
+    std::vector<glm::vec3> &graphVerts,
+    std::vector<std::vector<std::pair<unsigned int, float>>> &graph,
+    std::vector<Vertex> &agentVerts, std::vector<Vertex> &frameVerts,
+    std::vector<Vertex> &obVerts, std::vector<Vertex> &predRtVerts,
+    std::vector<Vertex> &realRtVerts, std::vector<Vertex> &ptVerts,
+    std::vector<Vertex> &graphEdgeVerts) {
+
+  if (scene > 4)
+    initializeAgents(agents);
+  else
+    restoreAgents(agents);
+  initializeObstacles(obs);
+  initializeTargets(targets);
+
+  switch (scene) {
+  case 2:
+    // Generate path using A* by default
+    crowd.genPath(graphVerts, graph, obstacles, frame, "PRM");
+    break;
+  case 3:
+    crowd.genPath(graphVerts, graph, obstacles, frame, "PRM", "AStar");
+    break;
+  case 4:
+    crowd.genPath(graphVerts, graph, obstacles, frame, "PRM", "Dijkstra");
+    break;
+  case 5:
+    crowd.genPath(graphVerts, graph, obstacles, frame, "RRT");
+    break;
+  case 6:
+    crowd.genPath(graphVerts, graph, obstacles, frame, "RRTStar");
+    break;
+  case 7:
+    crowd.genPath(graphVerts, graph, obstacles, frame, "RRT");
+    break;
+  case 8:
+    crowd.genPath(graphVerts, graph, obstacles, frame, "RRTStar");
+    break;
+  case 9:
+    crowd.genPath(graphVerts, graph, obstacles, frame, "RRT");
+    break;
+  default:
+    crowd.genPath(graphVerts, graph, obstacles, frame, "PRM");
+  }
+
+  frameVerts.clear();
+  agentVerts.clear();
+  obVerts.clear();
+  frameVertCount = frame.renderPoints(frameVerts);
+  agentVertCount = drawAgents(agents, agentVerts);
+  obVertCount = drawObstacles(obstacles, obVerts);
+
+  graphEdgeVerts.clear();
+  drawGraphEdges(graphEdgeVerts, graphVerts, graph);
+
+  //std::cout << graphVerts.size() << " " << graph.size() << " " << std::endl;
+  //exit(0);
+
+  bgVertCount = convertBGVerts(bgPoints, frameVerts, obVerts);
+  bgVertArrCount = bgVertCount * vertAttrLen;
+  agentVertCount = convertAgentVerts(agentPoints, agentVerts);
+  agentVertArrCount = agentVertCount * vertAttrLen;
+  // TODO: Use predVerts instead (in the following statement)
+  predVertCount = convertPredRtVerts(predPoints, graphEdgeVerts, agents);
+  predVertArrCount = predVertCount * vertAttrLen;
+  // pointVertCount = convertPtVerts(&ptPoints, waypointsVec);
+
+  std::vector<glm::vec3> pathSources, pathTargets;
+  if (scene == 2) {
+    pathTargets.push_back(targets[0].pos());
+    pointVertCount =
+      convertPtVerts(ptPoints, pathSources, pathSources, pathTargets);
+  } else {
+    for (auto &agent: agents)
+      pathSources.push_back(agent.center().pos());
+    for (auto &target: targets)
+      pathTargets.push_back(target.pos());
+
+    if (scene > 6) {
+      std::vector<glm::vec3> emptyVertsVec;
+      pointVertCount =
+          convertPtVerts(ptPoints, emptyVertsVec, pathSources, pathTargets);
+    } else {
+      pointVertCount =
+          convertPtVerts(ptPoints, graphVerts, pathSources, pathTargets);
+    }
+  }
+
+  pointVertArrCount = pointVertCount * vertAttrLen;
 }
 
 unsigned int drawAgents(std::vector<Agent> &agents,
@@ -327,9 +1122,9 @@ void updateGraph(std::vector<std::vector<std::pair<unsigned int, float>>> & grap
 }
 
 unsigned int drawGraphEdges(std::vector<Vertex>& edges,
-                               std::vector<glm::vec3> &graphVerts,
-                               std::vector<std::vector<std::pair<unsigned int, float>>> &graph,
-                               glm::vec3 edgeColor)
+                            std::vector<glm::vec3> &graphVerts,
+                            std::vector<std::vector<std::pair<unsigned int, float>>> &graph,
+                            glm::vec3 edgeColor)
 {
   for (unsigned int i = 0;i < graph.size(); ++i) {
     for (auto &pair: graph[i]) {
@@ -344,596 +1139,3 @@ unsigned int drawGraphEdges(std::vector<Vertex>& edges,
 }
 
 /******************n*********/
-
-int main(int argc, char* argv[])
-{
-  glfwInit();
-
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-
-#ifdef __APPLE__
-  glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-#endif
-
-  GLFWwindow* window = glfwCreateWindow(screenWidth, screenHeight, "Homework 3 Checkin (Press ENTER to start/pause)", NULL, NULL);
-  if (window == NULL) {
-    std::cout << "Failed to create GLFW window" << std::endl;
-    glfwTerminate();
-    return -1;
-  }
-  glfwMakeContextCurrent(window);
-  //glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-  glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-  glfwSetCursorPosCallback(window, mouseMoveCallback);
-  glfwSetMouseButtonCallback(window, mouseButtonCallback);
-  glfwSetScrollCallback(window, scrollCallback);
-  glfwSetKeyCallback(window, keyCallback);
-
-  if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
-    std::cout << "Failed to initialize GLAD" << std::endl;
-    return -1;
-  }
-
-  glfwSetFramebufferSizeCallback(window, framebuffer_size_cb);
-  glEnable(GL_DEPTH_TEST);
-
-  // Shapes & Routes
-  float curAgentX = agentX, curAgentY = agentY, curTarX = targetX, curTarY = targetY;
-  /*
-  for (unsigned int i = 0;i < 5; ++i) {
-    agents.push_back(Agent(
-        Vertex(glm::vec3(curAgentX + 1.2f * i, curAgentY, 0.0f)), agentR));
-    agents.push_back(Agent(
-        Vertex(glm::vec3(curAgentX, curAgentY + 1.2f * i, 0.0f)), agentR));
-  }
-  */
-  /*
-  agents.push_back(Agent(Vertex(glm::vec3(curAgentX, curAgentY, 0.0f)), agentR));
-  agents.push_back(Agent(Vertex(glm::vec3(curAgentX, curAgentY + 1.2f, 0.0f)), agentR));
-  agents.push_back(Agent(Vertex(glm::vec3(curAgentX+1.2f, curAgentY + 1.2f, 0.0f)), agentR));
-  agents.push_back(Agent(Vertex(glm::vec3(curAgentX+2.4f, curAgentY, 0.0f)), agentR));
-  agents.push_back(Agent(Vertex(glm::vec3(curAgentX, curAgentY+2.4f, 0.0f)), agentR));
-  */
-  initializeAgents(agents);
-
-  obstacles.push_back(Obstacle(Vertex(glm::vec3(0.0f, 3.5f, 0.0f)), obR));
-  obstacles.push_back(Obstacle(Vertex(glm::vec3(0.0f, -3.5f, 0.0f)), obR));
-  obstacles.push_back(Obstacle(Vertex(glm::vec3(5.0f, 0.0f, 0.0f)), obR));
-  obstacles.push_back(Obstacle(Vertex(glm::vec3(5.0f, 5.0f, 0.0f)), obR - 1.0f));
-  obstacles.push_back(Obstacle(Vertex(glm::vec3(5.0f, -5.0f, 0.0f)), obR - 1.0f));
-  //obstacles.clear();
-
-  std::vector<Vertex> targets;
-  targets.push_back(Vertex(glm::vec3(7.0f, 7.0f, 0.0f)));
-
-  Crowd crowd(agents, targets);
-
-  // Generate sample points for roadmap
-  std::vector<glm::vec3> waypointsVec;
-  for (auto &agent:crowd.agents())
-    waypointsVec.push_back(agent.center().pos());
-
-  sampleWaypoints(waypointsVec, obstacles, frame, agentR, wayPointCount);
-
-  /*
-  float minWayToCornerDist = FLT_MAX;
-  for (unsigned int i = 0;i < waypointsVec.size(); ++i) {
-    float curDist = glm::distance(waypointsVec[i], glm::vec3(7.0f, 7.0f, 0.0f));
-    if (curDist < minWayToCornerDist) {
-      minWayToCornerDist = curDist;
-      targets[0] = i;
-    }
-  }
-  */
-
-  std::vector<glm::vec3> graphVerts, tmpGraphVerts(waypointsVec);
-  std::vector<std::vector<std::pair<unsigned int, float>>> graph;
-  updateGraph(graph, graphVerts, waypointsVec, obstacles, frame, agentR);
-
-  crowd.genPath(graphVerts, graph, obstacles, frame, "RRT");
-  //crowd.genPath(graphVerts, graph, obstacles, frame, "PRM");
-
-  /*
-  for (unsigned int i = 0;i < graph.size(); ++i) {
-    std::cout << glm::to_string(graphVerts[i]) << ": " << std::endl;
-    for (auto &pair: graph[i]) {
-      std::cout << glm::to_string(graphVerts[pair.first]) << " " << pair.second
-  << std::endl;
-    }
-    std::cout << std::endl;
-  }
-  */
-
-  /*
-  float *samplePoints = new float[samplePointCount * 3];
-  genSamplePoints(samplePoints, agentX, agentY, targetX, targetY,
-                  maskX, maskY, maskR, samplePointCount);
-
-  std::vector<std::pair<float, float>> sampleVector;
-  sampleVector.push_back(std::pair<float, float>{ curAgentX, curAgentY });
-  for (unsigned int i = 0;i < samplePointCount; ++i) 
-    sampleVector.push_back(std::pair<float, float>{ samplePoints[i*3], samplePoints[i*3+1]});
-  sampleVector.push_back(std::pair<float, float>{ targetX, targetY });
-
-  std::vector<std::vector<std::pair<unsigned int, float>>> graphVector(sampleVector.size(), std::vector<std::pair<unsigned int, float>>());
-  genGraph(sampleVector, graphVector, maskX, maskY, maskR);
-
-  std::vector<unsigned int> shortestRoute(sampleVector.size());
-  std::stack<unsigned int> routeStack;
-  genRoute(sampleVector, graphVector, shortestRoute);
-
-  //std::cout << "size: " << sampleVector.size() << std::endl;
-  routeStack.push(sampleVector.size() - 1);
-  for (unsigned int routeVert = shortestRoute.back(); routeVert != 0;) {
-    routeStack.push(routeVert);
-    //std::cout << routeVert << ", pos x: " << sampleVector[routeVert].first
-    //<< ", y: " << sampleVector[routeVert].second << std::endl;
-    routeVert = shortestRoute[routeVert];
-  }
-  curTarX = sampleVector[routeStack.top()].first;
-  curTarY = sampleVector[routeStack.top()].second;
-  routeStack.pop();
-  */
-
-  // Generate geometry vertices and points for opengl
-  unsigned int bgVertCount = 0, bgVertArrCount = 0,
-    agentVertCount = 0, agentVertArrCount = 0,
-    predVertCount = 0, predVertArrCount = 0,
-    realVertCount = 0, realVertArrCount = 0,
-    pointVertCount = 0, pointVertArrCount = 0;
-  float *bgPoints, *agentPoints, *predPoints, *realPoints, *ptPoints;
-
-  unsigned int obVertCount = 0, frameVertCount = 0, graphEdgeVertCount;
-  std::vector<Vertex> agentVerts, frameVerts, obVerts, predRtVerts, realRtVerts, ptVerts,
-    graphEdgeVerts;
-  frameVertCount = frame.renderPoints(frameVerts);
-  agentVertCount = drawAgents(agents, agentVerts);
-  obVertCount = drawObstacles(obstacles, obVerts);
-
-  // TODO: Merge predverts and graphverts! (when displaying the graph)
-  graphEdgeVertCount = drawGraphEdges(graphEdgeVerts, graphVerts, graph);
-
-  bgVertCount = convertBGVerts(&bgPoints, frameVerts, obVerts);
-  bgVertArrCount = bgVertCount * vertAttrLen;
-  agentVertCount = convertAgentVerts(&agentPoints, agentVerts);
-  agentVertArrCount = agentVertCount * vertAttrLen;
-  // TODO: Use predVerts instead (in the following statement)
-  predVertCount = convertPredRtVerts(&predPoints, graphEdgeVerts, agents);
-  predVertArrCount = predVertCount * vertAttrLen;
-  pointVertCount = convertPtVerts(&ptPoints, waypointsVec);
-  pointVertArrCount = pointVertCount * vertAttrLen;
-
-  // Buffers
-  unsigned int VBOs[5];
-  glGenBuffers(5, VBOs);
-  glBindBuffer(GL_ARRAY_BUFFER, VBOs[VI_agents]);
-  glBufferData(GL_ARRAY_BUFFER, agentVertArrCount * sizeof(float), agentPoints, GL_STREAM_DRAW);
-  glBindBuffer(GL_ARRAY_BUFFER, VBOs[VI_bg]);
-  glBufferData(GL_ARRAY_BUFFER, bgVertArrCount * sizeof(float), bgPoints, GL_DYNAMIC_DRAW);
-  glBindBuffer(GL_ARRAY_BUFFER, VBOs[VI_p_rts]);
-  glBufferData(GL_ARRAY_BUFFER, predVertArrCount * sizeof(float), predPoints, GL_DYNAMIC_DRAW);
-  glBindBuffer(GL_ARRAY_BUFFER, VBOs[VI_r_rts]);
-  glBufferData(GL_ARRAY_BUFFER, realVertArrCount * sizeof(float), realPoints, GL_STREAM_DRAW);
-  glBindBuffer(GL_ARRAY_BUFFER, VBOs[VI_pts]);
-  glBufferData(GL_ARRAY_BUFFER, pointVertArrCount * sizeof(float), ptPoints, GL_STATIC_DRAW);
-
-  unsigned int VAOs[5];
-  glGenVertexArrays(5, VAOs);
-  for (unsigned int i = 0;i < 5; ++i) {
-    glBindVertexArray(VAOs[i]);
-    glBindBuffer(GL_ARRAY_BUFFER, VBOs[i]);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, vertAttrLen * sizeof(float),
-                          (void *)0);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, vertAttrLen * sizeof(float),
-                          (void *)(3 * sizeof(float)));
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, vertAttrLen * sizeof(float),
-                          (void *)(6 * sizeof(float)));
-    glEnableVertexAttribArray(2);
-    glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, vertAttrLen * sizeof(float),
-                          (void *)(7 * sizeof(float)));
-    glEnableVertexAttribArray(3);
-  }
-  glBindVertexArray(0);
-  glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-  // Shader & Camera Settings
-  int success = 0;
-  char infoLog[512];
-  unsigned int vertexShader, fragmentShader, shaderProgram;
-  loadShader("hw3.vert", "hw3.frag", vertexShader, fragmentShader, shaderProgram);
-  glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
-  if (!success) {
-    glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
-    std::cout << "ShaderProgram failed:" << infoLog << std::endl;
-  }
-
-  glDeleteShader(vertexShader);
-  glDeleteShader(fragmentShader);
-
-  GLint modelID = glGetUniformLocation(shaderProgram, "model");
-  GLint viewID = glGetUniformLocation(shaderProgram, "view");
-  GLint projectionID = glGetUniformLocation(shaderProgram, "projection");
-  glm::mat4 model(1.0f), view(1.0f), projection(1.0f);
-
-  //glEnable(GL_LINE_WIDTH);
-  glEnable(GL_PROGRAM_POINT_SIZE);
-  while(!glfwWindowShouldClose(window)) {
-    float currentFrameTime = glfwGetTime();
-    deltaFrameTime = currentFrameTime - lastFrameTime;
-    lastFrameTime = currentFrameTime;
-    frameRate = 1 / deltaFrameTime;
-    //std::cout << "Frame rate: " << frameRate << std::endl;
-    camera.speed(2.5f);
-
-    processInput(window);
-
-    glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    glUseProgram(shaderProgram);
-
-    // Set model view projection matrix
-    view = camera.view();
-    projection = glm::perspective(glm::radians(camera.zoom()),
-                                  (float)screenWidth / (float)screenHeight,
-                                  0.1f, 100.0f);
-    glUniformMatrix4fv(viewID, 1, GL_FALSE, glm::value_ptr(view));
-    glUniformMatrix4fv(projectionID, 1, GL_FALSE, glm::value_ptr(projection));
-    glUniformMatrix4fv(modelID, 1, GL_FALSE, glm::value_ptr(model));
-
-    // Render
-    glBindVertexArray(VAOs[0]);
-    glBindBuffer(GL_ARRAY_BUFFER, VBOs[VI_agents]);
-    glDrawArrays(GL_LINES, 0, agentVertCount);
-
-    glBindVertexArray(VAOs[1]);
-    glBindBuffer(GL_ARRAY_BUFFER, VBOs[VI_bg]);
-    glDrawArrays(GL_LINES, 0, bgVertCount);
-
-    glBindVertexArray(VAOs[2]);
-    glBindBuffer(GL_ARRAY_BUFFER, VBOs[VI_p_rts]);
-    glDrawArrays(GL_LINES, 0, predVertCount);
-
-    glBindVertexArray(VAOs[3]);
-    glBindBuffer(GL_ARRAY_BUFFER, VBOs[VI_r_rts]);
-    glDrawArrays(GL_LINES, 0, realVertCount);
-
-    glBindVertexArray(VAOs[4]);
-    glBindBuffer(GL_ARRAY_BUFFER, VBOs[VI_pts]);
-    glDrawArrays(GL_POINTS, 0, pointVertCount);
-
-    //glDrawArrays(GL_LINES, 0, objectLinesRenderCount);
-    /*
-    glDrawArrays(GL_LINES, 0, objectLinesRenderCount);
-    glDrawArrays(GL_POINTS, objectLinesRenderCount, graphVertsRenderCount);
-    glDrawArrays(GL_LINES, objectLinesRenderCount + graphVertsRenderCount, graphLinesRenderCount);
-    */
-
-    // Compute Locations
-    if (running)
-      crowd.simulate(3 * agentR, obstacles, frame, "boid");
-
-    // Re-draw Shapes & Render
-    agentVerts.clear();
-    agentVertCount = drawAgents(agents, agentVerts);
-    agentVertCount = reDrawAgent(agentPoints, agentVerts);
-
-    glBindBuffer(GL_ARRAY_BUFFER, VBOs[VI_agents]);
-    void *buf_ptr = glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
-    memcpy(buf_ptr, agentPoints, vertAttrLen * agentVertCount * sizeof(float));
-    glUnmapBuffer(GL_ARRAY_BUFFER);
-
-    glfwSwapBuffers(window);
-    glfwPollEvents();
-  }
-
-  //delete[] samplePoints;
-
-
-  if (bgPoints) delete[] bgPoints;
-  if (agentPoints) delete[] agentPoints;
-  if (predPoints) delete[] predPoints;
-  if (realPoints) delete[] realPoints;
-  if (ptPoints) delete[] ptPoints;
-
-  glfwTerminate();
-
-  return 0;
-}
-
-void framebuffer_size_cb(GLFWwindow *window, int width, int height)
-{
-  glViewport(0, 0, width, height);
-}
-
-void processInput(GLFWwindow *window)
-{
-  /* WSAD control */
-  if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-    camera.moveForward(deltaFrameTime);
-  if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-    camera.moveBackward(deltaFrameTime);
-  if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-    camera.moveLeft(deltaFrameTime);
-  if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-    camera.moveRight(deltaFrameTime);
-
-  // Camera control - to replace mouse movement control
-  if (glfwGetKey(window, GLFW_KEY_7) == GLFW_PRESS)
-    camera.pitchAndYaw(1.0, 0.0);
-  if (glfwGetKey(window, GLFW_KEY_8) == GLFW_PRESS)
-    camera.pitchAndYaw(-1.0, 0.0);
-  if (glfwGetKey(window, GLFW_KEY_9) == GLFW_PRESS)
-    camera.pitchAndYaw(0.0, 1.0);
-  if (glfwGetKey(window, GLFW_KEY_0) == GLFW_PRESS)
-    camera.pitchAndYaw(0.0, -1.0);
-}
-
-void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods)
-{
-  if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
-    glfwSetWindowShouldClose(window, true);
-  if (key == GLFW_KEY_ENTER && action  == GLFW_PRESS)
-    running = (running ? false : true);
-}
-
-
-void scrollCallback(GLFWwindow *window, double xOffset, double yOffset)
-{
-  camera.zoomInOut(yOffset);
-}
-
-void mouseMoveCallback(GLFWwindow *window, double xPos, double yPos)
-{
-  /*
-  if (firstRun) {
-    mouseLastX = xPos;
-    mouseLastY = yPos;
-    firstRun = false;
-  }
-
-  double xOffset = xPos - mouseLastX, yOffset = mouseLastY - yPos;
-  mouseLastX = xPos;
-  mouseLastY = yPos;
-
-  camera.pitchAndYaw(xOffset, yOffset);
-  */
-  mouseCurX = xPos;
-  mouseCurY = yPos;
-}
-
-void mouseButtonCallback(GLFWwindow *window, int button, int action, int mods)
-{
-  if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
-    double xPos, yPos;
-    glfwGetCursorPos(window, &xPos, &yPos);
-    std::cout << xPos << ", " << yPos << std::endl;
-
-    /*
-    // Camera settings
-    glm::mat4 model(1.0f), view(1.0f), projection(1.0f);
-    view = camera.view();
-    projection = glm::perspective(glm::radians(camera.zoom()),
-                                  (float)screenWidth / (float)screenHeight,
-                                  0.1f, 100.0f);
-    */
-    glm::vec4 mouseSpacePos(0.0f, 0.0f, 0.0f, 1.0f);
-    mouseSpacePos.x = (xPos - screenWidth / 2) / 24.0f;
-    mouseSpacePos.y = (screenHeight / 2 - yPos) / 24.0f;
-
-    std::cout << glm::to_string(mouseSpacePos) << std::endl;
-    /*
-    glm::vec4 result = projection * view * model * mouseSpacePos;
-    std::cout << glm::to_string(result) << std::endl;
-    */
-  }
-}
-
-void computePhysics(float *curX, float *curY, float *tarX, float *tarY,
-                    float speed, std::stack<unsigned int> &route,
-                    std::vector<std::pair<float, float>> &verts)
-{
-  glm::vec2 cur(*curX, *curY), tar(*tarX, *tarY);
-
-  if (*curX < targetX && *curY < targetY) {
-    cur += speed * glm::normalize(tar - cur);
-    *curX = cur.x;
-    *curY = cur.y;
-
-    if (*curX >= *tarX && *curY >= *tarY) {
-      *curX = *tarX;
-      *curY = *tarY;
-      if (!route.empty()) {
-        *tarX = verts[route.top()].first;
-        *tarY = verts[route.top()].second;
-        route.pop();
-      }
-    }
-  }
-}
-
-unsigned int genSamplePoints(float* samples,
-                          float startX, float startY,
-                          float endX, float endY,
-                          float maskX, float maskY, float maskR,
-                          unsigned int count)
-{
-  std::random_device rd;
-  std::mt19937 gen(rd());
-  std::uniform_real_distribution<float> disX(startX, endX), disY(startY, endY);
-  glm::vec2 mask(maskX, maskY), sample(0.0f, 0.0f);
-
-  for (unsigned int i = 0;i < count; ++i) {
-    samples[i*3] = disX(gen);
-    samples[i*3+1] = disY(gen);
-
-    if (samples[i*3] >= maskX - maskR && samples[i*3] <= maskX + maskR &&
-        samples[i*3+1] >= maskY - maskR && samples[i*3+1] <= maskY + maskR) {
-      sample.x = samples[i*3];
-      sample.y = samples[i*3+1];
-
-      sample = (sample - mask) / glm::distance(sample, mask) * (maskR + 0.01f);
-      samples[i*3] = sample.x;
-      samples[i*3+1] = sample.y;
-    }
-  }
-
-  return count;
-}
-
-void genGraph(std::vector<std::pair<float, float>>& samples,
-              std::vector<std::vector<std::pair<unsigned int, float>>>& graph,
-              float maskX, float maskY, float maskR)
-{
-  glm::vec2 mask(maskX, maskY), src(0.0f, 0.0f), tar(0.0f, 0.0f), proj(0.0f, 0.0f);
-
-  for (unsigned int i = 0;i < samples.size(); ++i) {
-    src.x = samples[i].first;
-    src.y = samples[i].second;
-    for (unsigned int j = i+1;j < samples.size(); ++j) {
-      //if (j == i) continue;
-
-      tar.x = samples[j].first;
-      tar.y = samples[j].second;
-
-      /*
-      std::cout << "src x, src y, tar x, tar y: " << glm::to_string(src) << " "
-                << glm::to_string(tar) << glm::to_string(mask) << std::endl;
-      std::cout << glm::to_string(glm::dmat2(mask-src, tar-src)) << std::endl;
-      std::cout << glm::determinant(glm::dmat2(glm::normalize(mask - src), tar - src)) << std::endl;
-      */
-      float dist = glm::distance(tar, src);
-      if (dist > sampleNeighborRadius)
-        continue;
-
-      if (abs(glm::determinant(glm::dmat2(mask - src, glm::normalize(tar - src)))) > maskR) {
-        //float dist = glm::distance(tar, src);
-        graph[i].push_back(std::pair<unsigned int, float>{j, dist});
-        graph[j].push_back(std::pair<unsigned int, float>{i, dist});
-
-        /*
-        std::cout << "src x, src y, tar x, tar y: " << glm::to_string(src)
-                  << " " << glm::to_string(tar) << glm::to_string(mask)
-                  << std::endl;
-        */
-
-      } else {
-        // If the projection point is not on the segment, then add it to the graph edges collection
-        proj = glm::dot(mask - src, glm::normalize(tar - src)) * glm::normalize(tar - src);
-
-        if (glm::dot(proj, tar - src) < 0 ||
-            glm::dot(proj, tar - src) > glm::dot(tar - src, tar - src)) {
-          //float dist = glm::distance(tar, src);
-          graph[i].push_back(std::pair<unsigned int, float>{j, dist});
-          graph[j].push_back(std::pair<unsigned int, float>{i, dist});
-        }
-      }
-    }
-  }
-}
-
-void genRoute(std::vector<std::pair<float, float>> &verts, 
-              std::vector<std::vector<std::pair<unsigned int, float>>> &graph,
-              std::vector<unsigned int> &route)
-{
-  struct F
-  {
-    unsigned int vert;
-    float dist;
-
-    F(unsigned int vert, float dist): vert(vert), dist(dist) {};
-    bool operator < (F d) const
-    {
-      return this->dist < d.dist;
-    }
-  };
-
-  auto distLam = [](const std::pair<float, float> &p1,
-                    const std::pair<float, float> &p2) {
-    float xDist = p1.first - p2.first, yDist = p1.second - p2.second;
-    return sqrt(xDist * xDist + yDist * yDist);
-  };
-
-  //float *h = new float[verts.size()],
-  float *routeDist = new float[verts.size()];
-  for (unsigned int i = 0;i < verts.size(); ++i) {
-    //h[i] = distLam(verts[i], verts.back());
-    //h[i] = 0;
-    routeDist[i] = FLT_MAX;
-    route[i] = verts.size();
-  }
-  routeDist[0] = 0;
-
-  std::priority_queue<F> toBeSearched;
-  toBeSearched.push(F(0, 0));
-
-  bool end = false;
-  while (!toBeSearched.empty() && !end) {
-    unsigned int curIndex = toBeSearched.top().vert;
-    toBeSearched.pop();
-
-    for (auto &edge : graph[curIndex]) {
-      if (routeDist[edge.first] == FLT_MAX)
-        //toBeSearched.push(F(edge.first, edge.second + h[edge.first]));
-        // F(n) = G(n) + H(n)
-        toBeSearched.push(F(edge.first, edge.second + distLam(verts[edge.first], verts.back())));
-
-      if (routeDist[curIndex] + edge.second < routeDist[edge.first]) {
-        route[edge.first] = curIndex;
-        routeDist[edge.first] = routeDist[curIndex] + edge.second;
-        //std::cout << "** cur: " << curIndex << ", next: "<< edge.first
-        //<< ", dist: " << routeDist[edge.first] << std::endl;
-      }
-
-      if (edge.second == verts.size() - 1) {
-        end = true;
-        break;
-      }
-    }
-  }
-
-  delete[] routeDist;
-}
-
-void loadShader(
-  const char* vertexShaderName, const char* fragmentShaderName,
-  unsigned int& vertShader, unsigned int& fragShader, unsigned int& shaderProg
-)
-{
-  std::ifstream vertexShaderFStream(vertexShaderName),
-    fragmentShaderFStream(fragmentShaderName);
-  std::stringstream vertexShaderStream, fragmentShaderStream;
-
-  vertexShaderStream << vertexShaderFStream.rdbuf();
-  fragmentShaderStream << fragmentShaderFStream.rdbuf();
-
-  const string *vertexStr = new string(vertexShaderStream.str());
-  const string *fragStr = new string(fragmentShaderStream.str());
-  // const char *vertexShaderSource = vertexShaderStream.str().c_str();
-  // const char *fragmentShaderSource = fragmentShaderStream.str().c_str();
-  const char *vertexShaderSource = vertexStr->c_str();
-  const char *fragmentShaderSource = fragStr->c_str();
-
-  //std::cout << vertexShaderSource;
-  //std::cout << fragmentShaderSource;
-
-  vertShader = glCreateShader(GL_VERTEX_SHADER);
-  glShaderSource(vertShader, 1, &vertexShaderSource, NULL);
-  glCompileShader(vertShader);
-
-  fragShader = glCreateShader(GL_FRAGMENT_SHADER);
-  glShaderSource(fragShader, 1, &fragmentShaderSource, NULL);
-  glCompileShader(fragShader);
-
-  shaderProg = glCreateProgram();
-  glAttachShader(shaderProg, vertShader);
-  glAttachShader(shaderProg, fragShader);
-  glLinkProgram(shaderProg);
-
-  delete vertexStr;
-  delete fragStr;
-}
