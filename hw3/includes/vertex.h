@@ -11,6 +11,11 @@ public:
       _force(glm::vec3(0.0f, 0.0f, 0.0f)), _vel(glm::vec3(0.0f, 0.0f, 0.0f)),
       _texture(glm::vec2(0.0f, 0.0f)), _radius(20.0f), _mass(1.0f) {};
 
+  Vertex(glm::vec3 pos)
+    : _pos(pos), _color(glm::vec3(0.0f, 0.0f, 0.0f)),
+      _force(glm::vec3(0.0f, 0.0f, 0.0f)), _vel(glm::vec3(0.0f, 0.0f, 0.0f)),
+      _texture(glm::vec2(0.0f, 0.0f)), _radius(20.0f), _mass(1.0f){};
+
   Vertex(glm::vec3 pos, glm::vec3 color, float radius, float mass)
     : _pos(pos), _color(color), _radius(radius), _mass(mass)
   {
@@ -19,7 +24,7 @@ public:
     _vel = glm::vec3(0.0f, 0.0f, 0.0f);
   };
 
-  Vertex(Vertex &src) {
+  Vertex(const Vertex &src) {
     _pos = glm::vec3(src.pos());
     _color = glm::vec3(src.color());
     _force = glm::vec3(src.force());
@@ -29,11 +34,17 @@ public:
     _mass = src.mass();
   }
 
-  glm::vec3& pos() { return _pos; }
-  glm::vec3& color() { return _color; }
-  glm::vec3& force() { return _force; }
-  glm::vec3& vel() { return _vel; }
-  glm::vec2& texture() { return _texture; }
+  glm::vec3 pos() const { return _pos; }
+  glm::vec3 color() const { return _color; }
+  glm::vec3 force() const { return _force; }
+  glm::vec3 vel() const { return _vel; }
+  glm::vec2 texture() const { return _texture; }
+
+  void pos(float x, float y, float z) { _pos = glm::vec3(x, y, z); }
+  void color(float r, float g, float b) { _color = glm::vec3(r, g, b); }
+  void force(float x, float y, float z) { _force = glm::vec3(x, y, z); }
+  void vel(float x, float y, float z) { _vel = glm::vec3(x, y, z); }
+  void texture(float x, float y) { _texture = glm::vec2(x, y); }
 
   const float radius() const { return _radius; }
   const float mass() const { return _mass; }
@@ -54,7 +65,7 @@ public:
     _pos += _vel * dt;
   }
 
-  void flat(float* result)
+  unsigned int flat(float* result)
   {
     float tmp[] = {
       _pos.x, _pos.y, _pos.z,
@@ -64,6 +75,8 @@ public:
     };
 
     memcpy(result, tmp, sizeof(tmp));
+    
+    return sizeof(tmp) / sizeof(float);
   }
 
 private:
