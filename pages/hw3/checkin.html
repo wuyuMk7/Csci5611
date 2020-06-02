@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title> Csci 5611 HW3 Checkin</title>
+    <meta charset="utf-8">
+    
+    <link rel=stylesheet href=https://fonts.googleapis.com/icon?family=Material+Icons>
+    <link rel=stylesheet href=https://code.getmdl.io/1.3.0/material.indigo-pink.min.css>
+    <script defer src=https://code.getmdl.io/1.3.0/material.min.js></script>
+    <style>
+      header { position: fixed; }
+      a.mylink { color: blue; text-decoration: underline; }
+      .content { padding-top: 5em; }
+      .content .cell-title { font: bold 1.2em Arial; margin: 1em auto; }
+      .content .cell-content { text-indent: 1em;}
+      .scrollToTop { position:fixed; bottom: 5em; right: 5em; }
+    </style>
+  </head>
+  <body>
+    <div>
+      <div class="header mdl-layout mdl-js-layout mdl-layout--fixed-header">
+        <header class="mdl-layout__header">
+          <div class="mdl-layout__header-row">
+            <span class="mdl-layout-title">Csci5611 Homework 3 Check-in</span>
+            <div class="mdl-layout-spacer"></div>
+            <nav class="mdl-navigation">
+              <a class="mdl-navigation__link" href="#description">Description</a>
+              <a class="mdl-navigation__link" href="#code">Code</a>
+              <a class="mdl-navigation__link" href="#video">Video</a>
+              <a class="mdl-navigation__link" href="#libs">Dependencies</a>
+              <a class="mdl-navigation__link" href="#run">Build</a>
+            </nav>
+          </div>
+        </header>
+      </div>
+      <div class="content mdl-grid">
+        <div class="side mdl-cell mdl-cell--2-col"></div>
+        <div class="center mdl-cell mdl-cell--8-col">
+          <div class="member">
+            <div class="cell-title">
+              Group
+            </div>
+            <div class="cell-content">
+              <ul>
+                <li>
+                  Yang He 
+                  <a class="mylink mdl-navigation__link" href="mailto:he000242@umn.edu">he000242@umn.edu</a>
+                </li>
+              </ul>
+            </div>
+          </div>
+          <div class="description" id="description">
+            <div class="cell-title">
+              Description
+            </div>
+            <div class="cell-content">
+              <ul>
+                <li>
+                  The video contains an agent starting from the position (-9, 9)
+                  and heading the target (9, 9). 
+                </li>
+                <li>
+                  The obstacle is located at (0, 0). 
+                </li>
+                <li>
+                  The program sampled 200 points and connected two points if their 
+                  distance is not greater than 5.0. 
+                </li>
+                <li>
+                  Black lines represent the edge of the sample graph. 
+                </li>
+                <li>
+                  Red line represents the predicted shortest path from the starting point to the target. 
+                </li>
+                <li>
+                  The agent is also painted red.
+                </li>
+              </ul>
+            </div>
+          </div>
+          <div class="code" id="code">
+            <div class="cell-title">
+              Code
+            </div>
+            <div class="cell-content">
+              <ul>
+                <li>
+                  <a class="mylink mdl-navigation__link" target="_blank"
+                    href="https://github.com/wuyuMk7/Csci5611/blob/master/hw3/hw3_checkin.cc">
+                    https://github.com/wuyuMk7/Csci5611/blob/master/hw3/hw3_checkin.cc
+                  </a>
+                </li>
+              </ul>
+            </div>
+          </div>
+          <div class="video" id="video">
+            <div class="cell-title">
+              Video
+            </div>
+            <div class="cell-content">
+              <div class="video-description">
+                <ul>
+                  <li>
+                    The video can be found at 
+                    <a class="mylink mdl-navigation__link" target="_blank"
+                      href="https://www.youtube.com/watch?v=_Kv7FFt2lFs">video link</a></li>
+                </ul>
+              </div>
+              <div class="video-content">
+              <iframe width="640" height="480" class="mdl-navigation__link"
+                src="https://www.youtube.com/embed/_Kv7FFt2lFs" frameborder="0" 
+                allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" 
+                allowfullscreen></iframe>
+              </div>
+            </div>
+          </div>
+          <div class="required-libraries" id="libs">
+            <div class="cell-title">
+              Required libraries
+            </div>
+            <div class="cell-content">
+              <ul>
+                <li> OpenGL </li>
+                <li> glad </li>
+                <li> GLFW </li>
+                <li> SDL2 </li>
+                <li> glm (included in the code repo) </li>
+                <li> stb_image (included in the code repo) </li>
+              </ul>
+            </div>
+          </div>
+          <div class="how-to-run" id="run">
+            <div class="cell-title">
+              How to run it
+            </div>
+            <div class="cell-content">
+              <ol>
+                <li> 
+                  Clone the code repo to the local machine. 
+                </li>
+                <li>
+                  Run "make" to build the project.
+                </li>
+                <li>
+                  Run "./hw3_checkin" to start the simulation.
+                </li>
+              </ol>
+            </div>
+          </div>
+          <div class="difficulties" id="difficulties">
+            <div class="cell-title">
+              Difficult parts
+            </div>
+            <div class="cell-content">
+              <ul>
+                <li> 
+                  In my program, there is a parameter controlling the maximum 
+                  searching radius while creating edges between sample points. 
+                  If the distance of two points is greater than the radius, then 
+                  the program will not add an edge between them. 
+                  With this setting, the path can be better but a problem is that 
+                  the sample points may be divided into several separated parts if 
+                  the least distance between two parts is still greater than 
+                  the threshold radius. 
+                  In this case, the program cannot find a path from the starting 
+                  point to the target. 
+                  For the check-in, I tuned this parameter and the number of 
+                  sample points to avoid this issue. 
+                  But I think a better solution may be to do a double check over 
+                  the graph after creating edges and to add links among the 
+                  separated parts to connect all of them.
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <div class="side mdl-cell mdl-cell--2-col"></div>
+      </div>
+      <div class="scrollToTop">
+        <button class="mdl-button mdl-js-button mdl-button--fab"
+          onclick="scrollToTop()">
+          <i class="material-icons">arrow_upward</i>
+        </button>
+      </div>
+    </div>
+    <script type="text/javascript">
+      function scrollToTop() {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+    </script>
+  </body>
+</html>
