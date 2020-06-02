@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title> Csci 5611 HW3 Checkin</title>
+    <meta charset="utf-8">
+    
+    <link rel=stylesheet href=https://fonts.googleapis.com/icon?family=Material+Icons>
+    <link rel=stylesheet href=https://code.getmdl.io/1.3.0/material.indigo-pink.min.css>
+    <script defer src=https://code.getmdl.io/1.3.0/material.min.js></script>
+    <style>
+      header { position: fixed; }
+      a.mylink { color: blue; text-decoration: underline; }
+      .content { padding-top: 5em; }
+      .content .cell-title { font: bold 1.2em Arial; margin: 1em auto; }
+      .content .cell-content { text-indent: 1em;}
+      .scrollToTop { position:fixed; bottom: 5em; right: 5em; }
+    </style>
+  </head>
+  <body>
+    <div>
+      <div class="header mdl-layout mdl-js-layout mdl-layout--fixed-header">
+        <header class="mdl-layout__header">
+          <div class="mdl-layout__header-row">
+            <span class="mdl-layout-title">Csci5611 Homework 3</span>
+            <div class="mdl-layout-spacer"></div>
+            <nav class="mdl-navigation">
+              <a class="mdl-navigation__link" href="checkin.html">Check-in</a>
+              <a class="mdl-navigation__link" href="#description">Description</a>
+              <a class="mdl-navigation__link" href="#code">Code</a>
+              <a class="mdl-navigation__link" href="#video">Video</a>
+              <a class="mdl-navigation__link" href="#features">Features</a>
+              <a class="mdl-navigation__link" href="#libs">Dependencies</a>
+              <a class="mdl-navigation__link" href="#run">Build</a>
+            </nav>
+          </div>
+        </header>
+      </div>
+      <div class="content mdl-grid">
+        <div class="side mdl-cell mdl-cell--2-col"></div>
+        <div class="center mdl-cell mdl-cell--8-col">
+          <div class="member">
+            <div class="cell-title">
+              Group
+            </div>
+            <div class="cell-content">
+              <ul>
+                <li>
+                  Yang He 
+                  <a class="mylink mdl-navigation__link" href="mailto:he000242@umn.edu">he000242@umn.edu</a>
+                </li>
+              </ul>
+            </div>
+          </div>
+          <div class="description" id="description">
+            <div class="cell-title">
+              Description
+            </div>
+            <div class="cell-content">
+              <ul>
+                <li>
+                  This homework contains 2 scenarios. The first task is to generate 
+                  path for agents and the agent group will reach the destination as boids
+                  and using TTC to avoid collision.
+                  I also added some collision detection features to make the planning better.
+                  The second task is to change the destination dynamically, 
+                  which requires to replan paths for agents. 
+                  Agents also move as boids.
+                </li>
+                <li>
+                  The group interaction is built on top of Boids and TTC.
+                  TTC is used to check the distance between one agent and another, or 
+                  between one agent and obstacles.
+                </li>
+                <li>
+                  The global navigation is based on PRM/A* and RRT/Optimal RRT.
+                </li>
+                <li>
+                  My video contains 9 scenes. Details can be found in the feature section.
+                </li>
+              </ul>
+            </div>
+          </div>
+          <div class="code" id="code">
+            <div class="cell-title">
+              Code
+            </div>
+            <div class="cell-content">
+              <ul>
+                <li> Homework repository: 
+                  <a class="mylink mdl-navigation__link" target="_blank"
+                    href="https://github.com/wuyuMk7/Csci5611/blob/master/hw3">
+                    https://github.com/wuyuMk7/Csci5611/blob/master/hw3
+                  </a>
+                </li>
+                <li> Main Function: 
+                  <a class="mylink mdl-navigation__link" target="_blank"
+                    href="https://github.com/wuyuMk7/Csci5611/blob/master/hw3/hw3_main.cc">
+                    https://github.com/wuyuMk7/Csci5611/blob/master/hw3/hw3_main.cc
+                  </a>
+                </li>
+                <li>
+                  Boid (line 127), A*/Dijkstra (line 263), RRT/RRT* (line 365): 
+                  <br/ >
+                  <a class="mylink mdl-navigation__link" target="_blank"
+                    href="https://github.com/wuyuMk7/Csci5611/blob/master/hw3/agent.cc">
+                    https://github.com/wuyuMk7/Csci5611/blob/master/hw3/agent.cc
+                  </a>
+                </li>
+              </ul>
+            </div>
+          </div>
+          <div class="video" id="video">
+            <div class="cell-title">
+              Video
+            </div>
+            <div class="cell-content">
+              <div class="video-description">
+                <ul>
+                  <li>
+                    The video can be found at 
+                    <a class="mylink mdl-navigation__link" target="_blank"
+                      href="https://www.youtube.com/watch?v=00WAFqA6zBY">video link</a></li>
+                </ul>
+              </div>
+              <div class="video-content">
+              <iframe width="640" height="480" class="mdl-navigation__link"
+                src="https://www.youtube.com/embed/00WAFqA6zBY" frameborder="0" 
+                allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" 
+                allowfullscreen></iframe>
+              </div>
+            </div>
+          </div>
+          <div class="features" id="features">
+            <div class="cell-title">
+              Features
+            </div>
+            <div class="cell-content">
+              <ul>
+                <li>
+                    &nbsp;&nbsp;&nbsp;&nbsp;My video contains 9 scenes:
+                  <br/>
+                  <ol>
+                    <li>
+                      Basic planning tasks for agents to move to the target.
+                      The group interaction is implemented with Boids and TTC.
+                      The path planning is based on PRM and A*.
+                      200 points are sampled to construct the graph.
+                      When agents are moving towards the target, a small gap 
+                      lies between agents, which is produced by the separation force.
+                      Group movement is also affected by the alignment and cohesion,
+                      which makes agents move like a group instead of individual objects.
+                      This feature is more clear in the second scene.
+                    </li>
+                    <li>
+                      This scene shows to update the target dynamically and 
+                      replan agents next move in real time.
+                      When the agents are moving in an empty area, the flocking 
+                      behavior is clear. 
+                      But then they are approaching an obstacle, because of the 
+                      saparation force from the obstacle, some agents may leave
+                      the group but most of agents still move like a group.
+                    </li>
+                    <li>
+                      The third scene is used to record PRM/A* performance.
+                      Since I am using the same starting points, destination, 
+                      and sample points as the first scene, the shortest path 
+                      in this scene is also the same as the first task. 
+                      The A* requires to query about 30 vertices and less than 
+                      4000 edges to obtain the path.
+                    </li>
+                    <li>
+                      The forth scene is running with PRM/Dijkstra.
+                      It is running based on the completely same environment 
+                      as the third task.
+                      The algorithm requires to query about 165 vertices and 
+                      about 12000 edges to obtain the path.
+                    </li>
+                    <li>
+                      Paths in this task are produced by RRT.
+                      To be clearly display the RRT path, I only demonstrated
+                      the path queried by the last agent from the group.
+                      Compared with the paths obtained by the PRM, paths here 
+                      are always curve and even contains waves. 
+                      And from my perspective, RRT is much easier to implement,
+                      since I just need to focuse on a small area around the 
+                      agent to check if the agent can move a few meters 
+                      towards the sample points. 
+                      I don't need to think about an obstacle that is pretty 
+                      far away from the agent.
+                      Besides this, RRT doesn't required the global sample 
+                      points map, so it can run only with information 
+                      near the agent and this could be more common in real life.
+                    </li>
+                    <li>
+                      The sixth scene is about RRT*.
+                      Obviously, results obtained by RRT* are smoother
+                      than results from RRT. 
+                      Compared with RRT, RRT* contains additional process 
+                      to re-select a parent for the new point that will be 
+                      added to the set in order to minimize the cost 
+                      from the starting point to the new point.
+                      The re-selections happens in a small area around the new point. 
+                      After having re-selected the parent, RRT* will rewire
+                      the other points inside this small area to minimize 
+                      their cost as well.
+                    </li>
+                    <li>
+                      This scene demonstrates a single object running with RRT. 
+                      It is just used to show the path more clear.
+                    </li>
+                    <li>
+                      It is another object running with RRT*.
+                      Notice that the branch in this scene is much more clear 
+                      than the previous one. 
+                      I think it's because the lines rewiring points is several 
+                      times the stride.
+                      Frankly, the path in this scene does not contain may curves 
+                      like the previous one.
+                      Another thing is that all of cases demonstrated till now
+                      are running with smoothing.
+                      In this case, you can see that the agent is not running
+                      along the path.
+                      Instead, it selected another path that is pretty close to 
+                      the obstacle.
+                      It performs this since that point is the farthest it can 
+                      reach without crashing into any obstacle.
+                    </li>
+                    <li>
+                      The last scene is rnning without smoothing.
+                      Compared with the previous one, you can discover that the 
+                      agent is running almost along path.
+                      Sometimes it may leave the path.
+                      That is because when the agent performs a different action,
+                      it still has a velocity .
+                      That velocity makes the agent to perform as before 
+                      for a small period of time unitl the steer force can 
+                      pull the agent back to the right track.
+                    </li>
+                  </ol>
+                </li>
+                <li>
+                  Additional features implemented:
+                  <br/>
+                  (10)Implememnt and compare two different global navigation techniques.
+                  <br/>
+                  (5) Allow the user to dynamic choose anget starts and goals at run time.
+                  <br/>
+                  (5) Implement A* for graph search, much document performance improvement.
+                  <br/>
+                  (5) Implement path smoothing.
+                  <br/>
+                  (10) Implement an RRT. Briefly compare the RRT to the PRM method in terms of
+                  generated path, and ease of coding.
+                  <br/>
+                  (15) Implement the Optimal RRT algorithm (RRT*).
+                </li>
+              </ul>
+            </div>
+          </div>
+          <div class="failure" id="failure">
+            <div class="cell-title">
+              Failure case
+            </div>
+            <div class="cell-content">
+              <div class="video-description">
+                <ul>
+                  <li>
+                    <img src="hw3_failure.png" style="width: 100%;">
+                    <br/>
+                    I only took a screenshot from one test on my program. 
+                    The agent in the center of the image just got stuck there.
+                    It was shaking at that position but couldn't move to the target.
+                    I think that may be caused by the force from the objects around.
+                    Probably the forces are balanced here so it cannot move anymore.
+                    Sometimes similar cases occur in my test but the object just 
+                    moves slowly and will reach the destination at the end. This 
+                    process always consumes more time and the object will leave
+                    the group.
+                  </li>
+                </ul>
+              </div>
+              <div class="video-content">
+              </div>
+            </div>
+          </div>
+          <div class="required-libraries" id="libs">
+            <div class="cell-title">
+              Required libraries
+            </div>
+            <div class="cell-content">
+              <ul>
+                <li> OpenGL </li>
+                <li> glad </li>
+                <li> GLFW </li>
+                <li> SDL2 </li>
+                <li> glm (included in the code repo) </li>
+                <li> stb_image (included in the code repo) </li>
+              </ul>
+            </div>
+          </div>
+          <div class="how-to-run" id="run">
+            <div class="cell-title">
+              How to run it
+            </div>
+            <div class="cell-content">
+              <ol>
+                <li> 
+                  Clone the code repo to the local machine. 
+                </li>
+                <li>
+                  Run "make" to build the project.
+                </li>
+                <li>
+                  Run "./hw3" to start the simulation.
+                </li>
+              </ol>
+            </div>
+          </div>
+          <div class="difficulties" id="tools">
+            <div class="cell-title">
+              References
+            </div>
+            <div class="cell-content">
+              <ul>
+                <li> 
+                  Boid example from Processing website
+                </li>
+                <li>
+                  TTC example from Prof. Guy
+                </li>
+              </ul>
+            </div>
+          </div>
+          <div class="difficulties" id="difficulties">
+            <div class="cell-title">
+              Difficult parts
+            </div>
+            <div class="cell-content">
+              <ul>
+                <li> 
+                  It's so hard to tune Boid model since there are many forces 
+                  involved. I think params used in my code are almost there 
+                  but still not the perfect. 
+                  Sometimes it produces weird results.
+                </li>
+                <li>
+                  I tried to implement the RVO/ORCA but failed. It's interesting. 
+                  I will keep working on this.
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <div class="side mdl-cell mdl-cell--2-col"></div>
+      </div>
+      <div class="scrollToTop">
+        <button class="mdl-button mdl-js-button mdl-button--fab"
+          onclick="scrollToTop()">
+          <i class="material-icons">arrow_upward</i>
+        </button>
+      </div>
+    </div>
+    <script type="text/javascript">
+      function scrollToTop() {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+    </script>
+  </body>
+</html>

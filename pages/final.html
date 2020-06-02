@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title> Csci 5611 HW3 Checkin</title>
+    <meta charset="utf-8">
+    
+    <link rel=stylesheet href=https://fonts.googleapis.com/icon?family=Material+Icons>
+    <link rel=stylesheet href=https://code.getmdl.io/1.3.0/material.indigo-pink.min.css>
+    <script defer src=https://code.getmdl.io/1.3.0/material.min.js></script>
+    <style>
+      header { position: fixed; }
+      a.mylink { color: blue; text-decoration: underline; }
+      .content { padding-top: 5em; }
+      .content .cell-title { font: bold 1.2em Arial; margin: 1em auto; }
+      .content .cell-content { text-indent: 1em;}
+      .scrollToTop { position:fixed; bottom: 5em; right: 5em; }
+    </style>
+  </head>
+  <body>
+    <div>
+      <div class="header mdl-layout mdl-js-layout mdl-layout--fixed-header">
+        <header class="mdl-layout__header">
+          <div class="mdl-layout__header-row">
+            <span class="mdl-layout-title">Csci5611 Final Project</span>
+            <div class="mdl-layout-spacer"></div>
+            <nav class="mdl-navigation">
+              <a class="mdl-navigation__link" href="#description">Description</a>
+              <a class="mdl-navigation__link" href="#code">Code</a>
+              <a class="mdl-navigation__link" href="#report">Report</a>
+              <a class="mdl-navigation__link" href="#video">Video</a>
+              <a class="mdl-navigation__link" href="#features">Features</a>
+              <a class="mdl-navigation__link" href="#run">Build</a>
+            </nav>
+          </div>
+        </header>
+      </div>
+      <div class="content mdl-grid">
+        <div class="side mdl-cell mdl-cell--2-col"></div>
+        <div class="center mdl-cell mdl-cell--8-col">
+          <div class="member">
+            <div class="cell-title">
+             Group
+            </div>
+            <div class="cell-content">
+              <ul>
+                <li>
+                  Zhuoran Bi
+                  <a class="mylink mdl-navigation__link" href="mailto:bi000001@umn.edu">bi000001@umn.edu</a>
+                </li>
+                <li>
+                  Yang He 
+                  <a class="mylink mdl-navigation__link" href="mailto:he000242@umn.edu">he000242@umn.edu</a>
+                </li>
+              </ul>
+            </div>
+          </div>
+          <div class="description" id="description">
+            <div class="cell-title">
+              Description
+            </div>
+            <div class="cell-content">
+              The topic of our final project is Tower Defense Game. 
+              We implemented it using C++ with OpenGL, along with SDL2, SDL2_mixer, and freetype.
+              We mainly focus on the mechanism of the game and enable players to move the obstacle 
+              in the buidling process.
+              This is sort of similart to allow players to change map properties and 
+              it will also affect the route for the enemies to move to the target.
+              Since we have written a final project report for our game, 
+              we will not provide many details on this page. 
+              We have attachecd the link to our report on this page so that you can directly 
+              go to check our report.
+            </div>
+          </div>
+          <div class="code" id="code">
+            <div class="cell-title">
+              Code
+            </div>
+            <div class="cell-content">
+              <p>
+                Project repository: 
+                  <a class="mylink mdl-navigation__link" target="_blank"
+                    href="https://github.umn.edu/bi000001/TD">
+                    https://github.umn.edu/bi000001/TD
+                  </a>
+              </p>
+            </div>
+          </div>
+          <div class="report" id="report">
+            <div class="cell-title">
+              Report
+            </div>
+            <div class="cell-content">
+              You can find our final project from: 
+                <a class="mylink mdl-navigation__link" target="_blank"
+                    href="https://github.umn.edu/bi000001/TD/blob/master/CSCI5611_finalreport.pdf">
+                  UMN Github</a></li>
+              or
+                <a class="mylink mdl-navigation__link" target="_blank"
+                    href="https://drive.google.com/file/d/1G7h9DIVexCAwUZFEqhiWTDAI1u6vU4xe/view?usp=sharing">
+                  Google Drive</a></li>
+            </div>
+          </div>
+          <div class="video" id="video">
+            <div class="cell-title">
+              Video
+            </div>
+            <div class="cell-content">
+              <div class="video-description">
+                <p>
+                    The video can be found at 
+                    <a class="mylink mdl-navigation__link" target="_blank"
+                      href="https://www.youtube.com/watch?v=Yjgvh8JSCtQ">video link</a></li>
+                </p>
+              </div>
+              <div class="video-content">
+              <iframe width="640" height="480" class="mdl-navigation__link"
+                src="https://www.youtube.com/embed/Yjgvh8JSCtQ" frameborder="0" 
+                allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" 
+                allowfullscreen></iframe>
+              </div>
+            </div>
+          </div>
+          <div class="features" id="features">
+            <div class="cell-title">
+              Features
+            </div>
+            <div class="cell-content">
+              <ul>
+                <li> Path Finding </li>
+                <li> Diverse Towers </li>
+                <li> Particle System </li>
+                <li> Astounding Sound Effect </li>
+                <li> Text Rendering </li>
+              </ul>
+            </div>
+          </div>
+          <div class="required-libraries" id="libs">
+            <div class="cell-title">
+              Required libraries
+            </div>
+            <div class="cell-content">
+              <ul>
+                <li> OpenGL </li>
+                <li> glad </li>
+                <li> SDL2 </li>
+                <li> SDL2_mixer </li>
+                <li> freetype </li>
+                <li> glm (included in the code repo) </li>
+                <li> stb_image (included in the code repo) </li>
+              </ul>
+            </div>
+          </div>
+          <div class="how-to-run" id="run">
+            <div class="cell-title">
+              How to build and run it
+            </div>
+            <div class="cell-content">
+              <ol>
+                <li> 
+                  Open the .sln file to load it into visual studio.
+                </li>
+                <li>
+                  Configure dependencies for the project. You need to configure libraries for 
+                  SDL2, SDL2_mixer, and freetype.
+                </li>
+                <li>
+                  Build and Run the program.
+                </li>
+              </ol>
+            </div>
+          </div>
+        </div>
+        <div class="side mdl-cell mdl-cell--2-col"></div>
+      </div>
+      <div class="scrollToTop">
+        <button class="mdl-button mdl-js-button mdl-button--fab"
+          onclick="scrollToTop()">
+          <i class="material-icons">arrow_upward</i>
+        </button>
+      </div>
+    </div>
+    <script type="text/javascript">
+      function scrollToTop() {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+    </script>
+  </body>
+</html>

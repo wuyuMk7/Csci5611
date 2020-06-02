@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title> Csci 5611 HW2 Checkin</title>
+    <meta charset="utf-8">
+    
+    <link rel=stylesheet href=https://fonts.googleapis.com/icon?family=Material+Icons>
+    <link rel=stylesheet href=https://code.getmdl.io/1.3.0/material.indigo-pink.min.css>
+    <script defer src=https://code.getmdl.io/1.3.0/material.min.js></script>
+    <style>
+      header { position: fixed; }
+      a.mylink { color: blue; text-decoration: underline; }
+      .content { padding-top: 5em; }
+      .content .cell-title { font: bold 1.2em Arial; margin: 1em auto; }
+      .content .cell-content { text-indent: 1em;}
+      .scrollToTop { position:fixed; bottom: 5em; right: 5em; }
+    </style>
+  </head>
+  <body>
+    <div>
+      <div class="header mdl-layout mdl-js-layout mdl-layout--fixed-header">
+        <header class="mdl-layout__header">
+          <div class="mdl-layout__header-row">
+            <span class="mdl-layout-title">Csci5611 Homework 2</span>
+            <div class="mdl-layout-spacer"></div>
+            <nav class="mdl-navigation">
+              <a class="mdl-navigation__link" href="checkin.html">Checkin</a>
+              <a class="mdl-navigation__link" href="#description">Description</a>
+              <a class="mdl-navigation__link" href="#code">Code</a>
+              <a class="mdl-navigation__link" href="#features">Features</a>
+              <a class="mdl-navigation__link" href="#video">Video</a>
+              <a class="mdl-navigation__link" href="#run">Build</a>
+              <a class="mdl-navigation__link" href="#tools">Tools</a>
+            </nav>
+          </div>
+        </header>
+      </div>
+      <div class="content mdl-grid">
+        <div class="side mdl-cell mdl-cell--2-col"></div>
+        <div class="center mdl-cell mdl-cell--8-col">
+          <div class="member">
+            <div class="cell-title">
+              Group
+            </div>
+            <div class="cell-content">
+              <ul>
+                <li>
+                  Yang He 
+                  <a class="mylink mdl-navigation__link" href="mailto:he000242@umn.edu">he000242@umn.edu</a>
+                </li>
+              </ul>
+            </div>
+          </div>
+          <div class="description" id="description">
+            <div class="cell-title">
+              Description
+            </div>
+            <div class="cell-content">
+              <ul>
+                <li>
+                  In this homework, I simulated the cloth, sound, and 1D shallow water.
+                </li>
+              </ul>
+            </div>
+          </div>
+          <div class="code" id="code">
+            <div class="cell-title">
+              Code
+            </div>
+            <div class="cell-content">
+              <ul>
+                <li>
+                  Code repository: 
+                  <a class="mylink mdl-navigation__link" target="_blank"
+                    href="https://github.com/wuyuMk7/Csci5611/tree/master/hw2">
+                    https://github.com/wuyuMk7/Csci5611/tree/master/hw2
+                  </a>
+                </li>
+                <li> 
+                  Code for cloth simulation:
+                  <a class="mylink mdl-navigation__link" target="_blank"
+                     href="https://github.com/wuyuMk7/Csci5611/blob/master/hw2/cloth_and_audio/hw2.cc">
+                     https://github.com/wuyuMk7/Csci5611/blob/master/hw2/cloth_and_audio/hw2.cc
+                  </a>
+                </li>
+                <li>
+                  Code for audio simulation:
+                  <a class="mylink mdl-navigation__link" target="_blank"
+                     href="https://github.com/wuyuMk7/Csci5611/blob/master/hw2/cloth_and_audio/audio.cc">
+                     https://github.com/wuyuMk7/Csci5611/blob/master/hw2/cloth_and_audio/audio.cc
+                  </a>
+                </li>
+                <li>
+                  Code for 1D shallow water simulation:
+                  <a class="mylink mdl-navigation__link" target="_blank"
+                     href="https://github.com/wuyuMk7/Csci5611/blob/master/hw2/shallow_water/shallow_water.pde">
+                     https://github.com/wuyuMk7/Csci5611/blob/master/hw2/shallow_water/shallow_water.pde
+                  </a>
+                </li>
+              </ul>
+            </div>
+          </div>
+          <div class="features" id="features">
+            <div class="cell-title">
+              Features
+            </div>
+            <div class="cell-content">
+              <ul>
+                  <li> (5) Realtime rendering. </li>
+                  <li> (5) 3D rendering, with user-controlled camera. </li>
+                  <li> (5) Realtime user interaction with system. </li>
+                  <li> (10) 2D Mass-spring cloth simulation. </li>
+                  <li> (10) 3D Mass-spring cloth simulation. </li>
+                  <li> (10) Drag-terms. (A wind from the back of the flag keeps blowing the flag.) </li>
+                  <li> (10) 1-way cloth-object interaction. </li>
+                  <li> (5) 15x15 cloth with fast, smooth motion at 20 FPS.</li>
+                  <li> (5) 20x20 cloth at 30 FPS. </li>
+                  <li> (5) 30x30 cloth with obstacle interaction at 30 FPS. </li>
+                  <li> (5) Eulerian (1st order) (Used in cloth and sound simulation).</li>
+                  <li> (5) Higher-oder Explicit (Midpoint used in shallow water simulation).</li>
+                  <li> (10) Textured simulated objects. (Textured flag in cloth simulation)</li>
+                  <li> 
+                    (10) Two-way coupling object-simulation coupling. 
+                    In the cloth simulation, I demonstrated when the cube moves towards the cloth, the cloth 
+                    will be pushed by the cube. When the cube stands under the cloth, the cloth may be stay 
+                    on the surface of the cube for a few seconds but may also leave finally due to the gravity 
+                    or the wind from the back of the flag.
+                  </li>
+                  <li> 
+                    (5) Billowing/blowing wind effect simulated with aerodynamic drag 
+                    (The wind from the back of the flag.)
+                  </li>
+                  <li> (10) 1D water surface, with shallow water equation. </li>
+                  <li> 
+                    (30) Physical simulated (polyphonic) music instrument with user interaction. 
+                    (Users can control the strings. But it can only produce some noises.)
+                  </li>
+              </ul>
+            </div>
+          </div>
+          <div class="video" id="video">
+            <div class="cell-title">
+              Videos
+            </div>
+            <div class="cell-content">
+              <div class="video-description">
+                <ul>
+                  <li>
+                    <b>Cloth simulation video. </b>
+                    This video can be found at 
+                    <a class="mylink mdl-navigation__link" target="_blank"
+                      href="https://www.youtube.com/embed/L-T2o5jGSXU">video link</a>.</li>
+                </ul>
+              </div>
+              <div class="video-content">
+                <iframe width="560" height="315" class="mdl-navigation__link"
+                src="https://www.youtube.com/embed/L-T2o5jGSXU" frameborder="0" 
+                allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" 
+                allowfullscreen></iframe>
+              </div>
+            </div>
+            <div class="cell-content">
+              <div class="video-description">
+                <ul>
+                  <li>
+                    <b>Sound simulation video. </b>
+                    This video can be found at 
+                    <a class="mylink mdl-navigation__link" target="_blank"
+                      href="https://www.youtube.com/embed/-GKqZsZoiis">video link</a></li>
+                </ul>
+              </div>
+              <div class="video-content">
+                <iframe width="560" height="315" class="mdl-navigation__link"
+                  src="https://www.youtube.com/embed/-GKqZsZoiis" frameborder="0" 
+                  allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" 
+                  allowfullscreen></iframe>
+              </div>
+            </div>
+            <div class="cell-content">
+              <div class="video-description">
+                <ul>
+                  <li>
+                    <b>1D shallow water simulation video. </b>
+                    This video can be found at 
+                    <a class="mylink mdl-navigation__link" target="_blank"
+                      href="https://www.youtube.com/embed/E5N6bGckAmg">video link</a></li>
+                </ul>
+              </div>
+              <div class="video-content">
+                <iframe width="560" height="315" class="mdl-navigation__link"
+                  src="https://www.youtube.com/embed/E5N6bGckAmg" frameborder="0" 
+                  allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" 
+                  allowfullscreen></iframe>
+              </div>
+            </div>
+          </div>
+          <div class="how-to-run" id="run">
+            <div class="cell-title">
+              How to run it
+            </div>
+            <div class="cell-content">
+              <ol>
+                <li> 
+                  Clone the code repo to the local machine. 
+                </li>
+                <li>
+                  To run the 1D shallow water simulation, enter the shallow_water folder
+                  and run the file shallow_water.pde using processing.
+                </li>
+                <li>
+                  To run the cloth and sound simulation, enter the cloth_and_audio folder 
+                  and run the command "make" to build the project.
+                  <ul>
+                    <li> 
+                      Run './hw2' to simulate the cloth. You can use arrow buttons to move the cube.
+                    </li>
+                    <li>
+                      Run './audio' to produce some noises. 
+                      Press button number 1 to pluck the first string and 2 for the second string.
+                    </li>
+                  </ul>
+                </li>
+              </ol>
+            </div>
+          </div>
+          <div class="required-libraries" id="libs">
+            <div class="cell-title">
+              Required libraries
+            </div>
+            <div class="cell-content">
+              <ul>
+                <li> OpenGL </li>
+                <li> glad </li>
+                <li> GLFW </li>
+                <li> SDL2 </li>
+                <li> glm (included in the code repo) </li>
+                <li> stb_image (included in the code repo) </li>
+              </ul>
+            </div>
+          </div>
+          <div class="tools-and-resources" id="tools">
+            <div class="cell-title">
+              Tools & resources
+            </div>
+            <div class="cell-content">
+              <ul>
+                <li> Shallow water code and audio generation code from lecture slides. </li>
+                <li> Liam's code for camera in processing. </li>
+                <li> I learned the OpenGL from this website: 
+                  <a class="mylink mdl-navigation__link" href="https://learnopengl.com">
+                    learnopengl</a>
+                  and implemented the FPS style camera based on its tutorial.
+                </li>
+              </ul>
+            </div>
+          </div>
+          <div class="difficulties" id="difficulties">
+            <div class="cell-title">
+              Difficult parts
+            </div>
+            <div class="cell-content">
+              <ul>
+                <li> 
+                  It must be the audio simulation! 
+                  I'm still looking for a solution to produce some wonderful sounds instead of some noises. 
+                  I'd like to keep working on this to see if I can make some more progress!
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <div class="side mdl-cell mdl-cell--2-col"></div>
+      </div>
+      <div class="scrollToTop">
+        <button class="mdl-button mdl-js-button mdl-button--fab"
+          onclick="scrollToTop()">
+          <i class="material-icons">arrow_upward</i>
+        </button>
+      </div>
+    </div>
+    <script type="text/javascript">
+      function scrollToTop() {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+    </script>
+  </body>
+</html>
